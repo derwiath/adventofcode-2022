@@ -1,3 +1,10 @@
+# This script requires a cookie file with the session token
+# Put this in .cookie.txt:
+# -- BEGIN --
+# # Netscape HTTP Cookie File
+# .adventofcode.com	TRUE	/	FALSE	0	session	<token-copied-from-browser-devtools>
+# -- END --
+
 Param(
 	[parameter(Mandatory=$true)]
 	[ValidateRange(1, 25)]
