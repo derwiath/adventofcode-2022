@@ -1,8 +1,12 @@
-[package]
-name = "adventofcode-2022"
+[workspace]
+
+members = [
+  "dayx",
+]
+
+[workspace.package]
 version = "0.1.0"
+authors = ["Andreas Andersson <andreas@neoboid.com"]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+homepage = "https://www.neoboid.com"
+repository = "https://www.github.com/derwiath/adventofcode-2022"
