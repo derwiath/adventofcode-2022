@@ -10,6 +10,7 @@ authors = ["Andreas Andersson <andreas@neoboid.com"]
 edition = "2021"
 homepage = "https://www.neoboid.com"
 repository = "https://www.github.com/derwiath/adventofcode-2022"
+license = "MIT"
 
 [workspace.dependencies]
 regex = "1.7.0"
