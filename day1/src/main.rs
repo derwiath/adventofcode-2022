@@ -20,7 +20,22 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let mut cals = 0;
+    let mut cals_list: Vec<usize> = Vec::new();
+    for line in input.lines() {
+        if line.trim().len() > 0 {
+            let count = line.parse::<usize>().unwrap();
+            cals += count;
+        } else {
+            cals_list.push(cals);
+            cals = 0;
+        }
+    }
+    if cals > 0 {
+        cals_list.push(cals);
+    }
+    cals_list.sort_unstable_by(|a, b| b.cmp(a));
+    cals_list.iter().take(3).fold(0, |acc, c| acc + c)
 }
 
 fn main() {
@@ -65,10 +80,8 @@ mod tests_day1 {
         assert_eq!(solve_part1(EXAMPLE1), 24000);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 45000);
     }
 }
