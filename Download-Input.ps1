@@ -23,6 +23,8 @@ Param(
 )
 $OutputDir="day$Day"
 $OutputPath="$OutputDir/$Filename"
+$UserAgent="Download-Input.ps1 by github.com/derwiath via cURL"
+$URL="https://adventofcode.com/2022/day/$Day/input"
 
 If (-Not (Test-Path -Path "$CookieFilename" -PathType Leaf)) {
 	Write-Error "Failed to find $CookieFilename"
@@ -37,7 +39,7 @@ ElseIf ((-Not $Force) -And (Test-Path -Path "$OutputPath" -PathType Leaf)) {
 	Exit 1
 }
 
-Write-Host "curl -o $OutputPath --cookie $CookieFilename https://adventofcode.com/2022/day/$Day/input"
-curl --cookie $CookieFilename https://adventofcode.com/2022/day/$Day/input | Set-Content $OutputPath
+Write-Host "curl --cookie $CookieFilename -A `"$UserAgent`" $URL"
+curl --cookie $CookieFilename -A `"$UserAgent`" $URL | Set-Content $OutputPath
 
 Exit $LASTEXITCODE
