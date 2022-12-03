@@ -13,11 +13,12 @@ enum Pick {
     Paper = 3,
 }
 
+#[repr(u8)]
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum Outcome {
-    Lose,
-    Draw,
-    Win,
+    Lose = 0,
+    Draw = 3,
+    Win = 6,
 }
 
 impl Pick {
@@ -76,11 +77,7 @@ impl Outcome {
     }
 
     fn score(&self) -> usize {
-        match *self {
-            Outcome::Win => 6,
-            Outcome::Draw => 3,
-            Outcome::Lose => 0,
-        }
+        *self as usize
     }
 }
 
