@@ -6,6 +6,17 @@ const LOWER_Z_VALUE: u32 = ('z' as char) as u32;
 const UPPER_A_VALUE: u32 = ('A' as char) as u32;
 const UPPER_Z_VALUE: u32 = ('Z' as char) as u32;
 
+fn get_value(c: char) -> Option<u32> {
+    let value = c as u32;
+    if value >= LOWER_A_VALUE && value <= LOWER_Z_VALUE {
+        Some(value - LOWER_A_VALUE + 1)
+    } else if value >= UPPER_A_VALUE && value <= UPPER_Z_VALUE {
+        Some(value - UPPER_A_VALUE + 27)
+    } else {
+        None
+    }
+}
+
 fn solve_part1(input: &str) -> u32 {
     let mut sum = 0;
     for line in input.lines().filter(|l| l.trim().len() > 0) {
@@ -17,16 +28,7 @@ fn solve_part1(input: &str) -> u32 {
             .chars()
             .filter(|c| compartment2.contains(|c2| &c2 == c))
             .take(1)
-            .map(|c| {
-                let value = c as u32;
-                if value >= LOWER_A_VALUE && value <= LOWER_Z_VALUE {
-                    value - LOWER_A_VALUE + 1
-                } else if value >= UPPER_A_VALUE && value <= UPPER_Z_VALUE {
-                    value - UPPER_A_VALUE + 27
-                } else {
-                    panic!("Unexpected char {}", c);
-                }
-            })
+            .map(|c| get_value(c).expect("Unexpected char"))
             .fold(0, |acc, prio| acc + prio);
 
         sum += prio
@@ -45,16 +47,7 @@ fn solve_part2(input: &str) -> u32 {
             .filter(|c| line1.contains(|c1| &c1 == c))
             .filter(|c| line2.contains(|c2| &c2 == c))
             .take(1)
-            .map(|badge| {
-                let value = badge as u32;
-                if value >= LOWER_A_VALUE && value <= LOWER_Z_VALUE {
-                    value - LOWER_A_VALUE + 1
-                } else if value >= UPPER_A_VALUE && value <= UPPER_Z_VALUE {
-                    value - UPPER_A_VALUE + 27
-                } else {
-                    panic!("Unexpected char {}", badge);
-                }
-            })
+            .map(|badge| get_value(badge).expect("Unexpected char"))
             .next()
             .unwrap();
 
