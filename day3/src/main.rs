@@ -8,11 +8,7 @@ const UPPER_Z_VALUE: u32 = ('Z' as char) as u32;
 
 fn solve_part1(input: &str) -> u32 {
     let mut sum = 0;
-    for input_line in input.lines() {
-        let line = input_line.trim();
-        if line.len() == 0 {
-            continue;
-        }
+    for line in input.lines().filter(|l| l.trim().len() > 0) {
         let compartment_size = line.len() / 2;
         let compartment1 = &line[0..compartment_size];
         let compartment2 = &line[compartment_size..];
