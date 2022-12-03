@@ -87,49 +87,47 @@ fn solve_part1(input: &str) -> usize {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"([A-C]) ([X-Z])").unwrap();
     }
-    let mut sum = 0;
-    for line in input.lines() {
-        if let Some(captures) = RE.captures(line) {
-            assert!(captures.len() == 3);
-            if captures.len() == 3 {
-                let pick1_str = captures.get(1).unwrap().as_str();
-                let pick2_str = captures.get(2).unwrap().as_str();
-                let pick1 = Pick::new(pick1_str);
-                let pick2 = Pick::new(pick2_str);
+    input
+        .lines()
+        .filter(|l| l.trim().len() > 0)
+        .map(|l| {
+            if let Some(captures) = RE.captures(l) {
+                let mut picks = captures
+                    .iter()
+                    .skip(1)
+                    .map(|p| Pick::new(p.unwrap().as_str()));
+                let pick1 = picks.next().unwrap();
+                let pick2 = picks.next().unwrap();
                 let outcome = pick2.play(&pick1);
-                let score = pick2.score() + outcome.score();
-                sum += score
+                pick2.score() + outcome.score()
+            } else {
+                panic!("Failed to parse line: <{}>", l);
             }
-        } else if line.trim().len() > 0 {
-            panic!("Failed to parse line: <{}>", line);
-        }
-    }
-    sum
+        })
+        .fold(0, |acc, score| acc + score)
 }
 
 fn solve_part2(input: &str) -> usize {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"([A-C]) ([X-Z])").unwrap();
     }
-    let mut sum = 0;
-    for line in input.lines() {
-        if let Some(captures) = RE.captures(line) {
-            assert!(captures.len() == 3);
-            if captures.len() == 3 {
+    input
+        .lines()
+        .filter(|l| l.trim().len() > 0)
+        .map(|line| {
+            if let Some(captures) = RE.captures(line) {
+                assert!(captures.len() == 3);
                 let pick1_str = captures.get(1).unwrap().as_str();
                 let outcome_str = captures.get(2).unwrap().as_str();
                 let pick1 = Pick::new(pick1_str);
                 let outcome = Outcome::new(outcome_str);
                 let pick2 = pick1.pick_for_outcome_against_self(&outcome);
-                let score = pick2.score() + outcome.score();
-                sum += score
+                pick2.score() + outcome.score()
+            } else {
+                panic!("Failed to parse line: <{}>", line);
             }
-        } else if line.trim().len() > 0 {
-            print!("line: \"{}\"", line);
-            panic!("Failed to parse line");
-        }
-    }
-    sum
+        })
+        .fold(0, |acc, score| acc + score)
 }
 
 fn main() {
