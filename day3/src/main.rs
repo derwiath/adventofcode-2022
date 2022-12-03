@@ -42,8 +42,44 @@ fn solve_part1(input: &str) -> u32 {
     sum
 }
 
-fn solve_part2(input: &str) -> usize {
-    input.len()
+fn solve_part2(input: &str) -> u32 {
+    let mut sum = 0;
+    let lower_a_value = 'a'.to_digit(10).unwrap_or(97);
+    let lower_z_value = 'z'.to_digit(10).unwrap_or(122);
+    let upper_a_value = 'A'.to_digit(10).unwrap_or(65);
+    let upper_z_value = 'Z'.to_digit(10).unwrap_or(90);
+    let mut lines_iter = input.lines().filter(|l| l.trim().len() > 0);
+    while let Some(line0) = lines_iter.next() {
+        let line1 = lines_iter.next().unwrap();
+        let line2 = lines_iter.next().unwrap();
+        println!("1: {}", line0);
+        println!("2: {}", line1);
+        println!("3: {}", line2);
+
+        let badge_prio = line0
+            .chars()
+            .filter(|c| line1.contains(|c1| &c1 == c))
+            .filter(|c| line2.contains(|c2| &c2 == c))
+            .take(1)
+            .map(|badge| {
+                println!(" badge: {}", badge);
+                let value = badge as u32;
+                if value >= lower_a_value && value <= lower_z_value {
+                    value - lower_a_value + 1
+                } else if value >= upper_a_value && value <= upper_z_value {
+                    value - upper_a_value + 27
+                } else {
+                    panic!("Unexpected char {}", badge);
+                }
+            })
+            .next()
+            .unwrap();
+
+        println!("prio: {}\n", badge_prio);
+
+        sum += badge_prio;
+    }
+    sum
 }
 
 fn main() {
@@ -80,10 +116,8 @@ CrZsJsPPZsGzwwsLwLmpwMDw";
         assert_eq!(solve_part1(EXAMPLE1), 157);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 70);
     }
 }
