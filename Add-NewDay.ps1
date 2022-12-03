@@ -7,11 +7,12 @@ Param(
 	[String]
 	$SourcePackage="dayx"
 )
-$TargetPackage="day$Day"
+$TargetPackage = "day$Day"
 $TargetToml = "$TargetPackage/Cargo.toml"
 $TargetMain= "$TargetPackage/src/main.rs"
 $WorkspaceToml = "Cargo.toml"
 $TempFile = ".tempFile"
+$CommitMsg ="$Day`: Add Skeleton"
 
 Copy-Item -Recurse $SourcePackage -Destination $TargetPackage
 
@@ -26,3 +27,7 @@ $Search="`"$SourcePackage`""
 $Replace ="`"$SourcePackage`",`r`n  `"$TargetPackage`""
 (Get-Content -Path $WorkspaceToml) -Replace $Search, $Replace | Add-Content -Path $TempFile
 Move-Item -Force -Path $TempFile -Destination $WorkspaceToml
+
+git add $TargetPackage
+git add $WorkspaceToml
+git commit -m $CommitMsg
