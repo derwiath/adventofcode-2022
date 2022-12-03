@@ -5,11 +5,12 @@ extern crate regex;
 use std::env;
 use std::fs;
 
+#[repr(u8)]
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum Pick {
-    Rock,
-    Scizzors,
-    Paper,
+    Rock = 1,
+    Scizzors = 2,
+    Paper = 3,
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
@@ -30,22 +31,12 @@ impl Pick {
     }
 
     fn play(&self, other: &Pick) -> Outcome {
-        match *self {
-            Pick::Rock => match *other {
-                Pick::Rock => Outcome::Draw,
-                Pick::Paper => Outcome::Lose,
-                Pick::Scizzors => Outcome::Win,
-            },
-            Pick::Paper => match *other {
-                Pick::Rock => Outcome::Win,
-                Pick::Paper => Outcome::Draw,
-                Pick::Scizzors => Outcome::Lose,
-            },
-            Pick::Scizzors => match *other {
-                Pick::Rock => Outcome::Lose,
-                Pick::Paper => Outcome::Win,
-                Pick::Scizzors => Outcome::Draw,
-            },
+        if *self == *other {
+            Outcome::Draw
+        } else if (*self as u8 + 1) % 3 == (*other as u8) {
+            Outcome::Win
+        } else {
+            Outcome::Lose
         }
     }
 
