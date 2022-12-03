@@ -1,12 +1,13 @@
 use std::env;
 use std::fs;
 
+const LOWER_A_VALUE: u32 = ('a' as char) as u32;
+const LOWER_Z_VALUE: u32 = ('z' as char) as u32;
+const UPPER_A_VALUE: u32 = ('A' as char) as u32;
+const UPPER_Z_VALUE: u32 = ('Z' as char) as u32;
+
 fn solve_part1(input: &str) -> u32 {
     let mut sum = 0;
-    let lower_a_value = 'a'.to_digit(10).unwrap_or(97);
-    let lower_z_value = 'z'.to_digit(10).unwrap_or(122);
-    let upper_a_value = 'A'.to_digit(10).unwrap_or(65);
-    let upper_z_value = 'Z'.to_digit(10).unwrap_or(90);
     for input_line in input.lines() {
         let line = input_line.trim();
         if line.len() == 0 {
@@ -26,10 +27,10 @@ fn solve_part1(input: &str) -> u32 {
             .map(|c| {
                 println!(" both: {}", c);
                 let value = c as u32;
-                if value >= lower_a_value && value <= lower_z_value {
-                    value - lower_a_value + 1
-                } else if value >= upper_a_value && value <= upper_z_value {
-                    value - upper_a_value + 27
+                if value >= LOWER_A_VALUE && value <= LOWER_Z_VALUE {
+                    value - LOWER_A_VALUE + 1
+                } else if value >= UPPER_A_VALUE && value <= UPPER_Z_VALUE {
+                    value - UPPER_A_VALUE + 27
                 } else {
                     panic!("Unexpected char {}", c);
                 }
@@ -44,10 +45,6 @@ fn solve_part1(input: &str) -> u32 {
 
 fn solve_part2(input: &str) -> u32 {
     let mut sum = 0;
-    let lower_a_value = 'a'.to_digit(10).unwrap_or(97);
-    let lower_z_value = 'z'.to_digit(10).unwrap_or(122);
-    let upper_a_value = 'A'.to_digit(10).unwrap_or(65);
-    let upper_z_value = 'Z'.to_digit(10).unwrap_or(90);
     let mut lines_iter = input.lines().filter(|l| l.trim().len() > 0);
     while let Some(line0) = lines_iter.next() {
         let line1 = lines_iter.next().unwrap();
@@ -64,10 +61,10 @@ fn solve_part2(input: &str) -> u32 {
             .map(|badge| {
                 println!(" badge: {}", badge);
                 let value = badge as u32;
-                if value >= lower_a_value && value <= lower_z_value {
-                    value - lower_a_value + 1
-                } else if value >= upper_a_value && value <= upper_z_value {
-                    value - upper_a_value + 27
+                if value >= LOWER_A_VALUE && value <= LOWER_Z_VALUE {
+                    value - LOWER_A_VALUE + 1
+                } else if value >= UPPER_A_VALUE && value <= UPPER_Z_VALUE {
+                    value - UPPER_A_VALUE + 27
                 } else {
                     panic!("Unexpected char {}", badge);
                 }
