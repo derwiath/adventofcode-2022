@@ -1,23 +1,43 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fs;
 
-fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
-    }
+fn solve_part1(input: &str) -> u32 {
     let mut sum = 0;
-    for line in input.lines() {
-        if let Some(captures) = RE.captures(line) {
-            if captures.len() == 3 {
-                let count = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-                let _thing = captures.get(2).unwrap().as_str();
-                sum += count;
-            }
+    let lower_a_value = 'a'.to_digit(10).unwrap_or(97);
+    let lower_z_value = 'z'.to_digit(10).unwrap_or(122);
+    let upper_a_value = 'A'.to_digit(10).unwrap_or(65);
+    let upper_z_value = 'Z'.to_digit(10).unwrap_or(90);
+    for input_line in input.lines() {
+        let line = input_line.trim();
+        if line.len() == 0 {
+            continue;
         }
+        let compartment_size = line.len() / 2;
+        let compartment1 = &line[0..compartment_size];
+        let compartment2 = &line[compartment_size..];
+
+        println!("1: {}", compartment1);
+        println!("2: {}", compartment2);
+
+        let prio = compartment1
+            .chars()
+            .filter(|c| compartment2.contains(|c2| &c2 == c))
+            .take(1)
+            .map(|c| {
+                println!(" both: {}", c);
+                let value = c as u32;
+                if value >= lower_a_value && value <= lower_z_value {
+                    value - lower_a_value + 1
+                } else if value >= upper_a_value && value <= upper_z_value {
+                    value - upper_a_value + 27
+                } else {
+                    panic!("Unexpected char {}", c);
+                }
+            })
+            .fold(0, |acc, prio| acc + prio);
+
+        println!("{}", prio);
+        sum += prio
     }
     sum
 }
@@ -48,12 +68,16 @@ mod tests_day3 {
     use super::*;
 
     const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+vJrwpWtwJgWrhcsFMMfFFhFp
+jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+PmmdzqPrVvPwwTWBwg
+wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+ttgJtRGJQctTZtZT
+CrZsJsPPZsGzwwsLwLmpwMDw";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 157);
     }
 
     const EXAMPLE2: &str = "";
