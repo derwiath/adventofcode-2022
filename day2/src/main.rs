@@ -8,8 +8,8 @@ use std::fs;
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum Pick {
     Rock,
-    Paper,
     Scizzors,
+    Paper,
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
