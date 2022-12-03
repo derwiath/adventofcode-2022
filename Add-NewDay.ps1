@@ -23,6 +23,6 @@ Move-Item -Force -Path $TempFile -Destination $TargetToml
 Move-Item -Force -Path $TempFile -Destination $TargetMain
 
 $Search="`"$SourcePackage`""
-$Replace ="`"$SourcePackage`", `"$TargetPackage`""
+$Replace ="`"$SourcePackage`",`r`n  `"$TargetPackage`""
 (Get-Content -Path $WorkspaceToml) -Replace $Search, $Replace | Add-Content -Path $TempFile
 Move-Item -Force -Path $TempFile -Destination $WorkspaceToml
