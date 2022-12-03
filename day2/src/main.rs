@@ -31,6 +31,15 @@ impl Pick {
         }
     }
 
+    fn from_u8(value: u8) -> Pick {
+        match value {
+            1 => Pick::Rock,
+            2 => Pick::Scizzors,
+            3 => Pick::Paper,
+            _ => panic!("not valid pick value"),
+        }
+    }
+
     fn play(&self, other: &Pick) -> Outcome {
         if *self == *other {
             Outcome::Draw
@@ -50,19 +59,11 @@ impl Pick {
     }
 
     fn pick_wins_over_self(&self) -> Pick {
-        match *self {
-            Pick::Rock => Pick::Paper,
-            Pick::Paper => Pick::Scizzors,
-            Pick::Scizzors => Pick::Rock,
-        }
+        Pick::from_u8((*self as u8 + 2) % 3)
     }
 
     fn pick_looses_to_self(&self) -> Pick {
-        match *self {
-            Pick::Rock => Pick::Scizzors,
-            Pick::Paper => Pick::Rock,
-            Pick::Scizzors => Pick::Paper,
-        }
+        Pick::from_u8((*self as u8 + 1) % 3)
     }
 }
 
