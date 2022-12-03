@@ -58,12 +58,13 @@ impl Pick {
         }
     }
 
-    fn pick_wins_over_self(&self) -> Pick {
-        Pick::from_u8((*self as u8 + 2) % 3)
-    }
-
-    fn pick_looses_to_self(&self) -> Pick {
-        Pick::from_u8((*self as u8 + 1) % 3)
+    fn pick_for_outcome_against_self(&self, outcome: &Outcome) -> Pick {
+        let pick_offset = match outcome {
+            Outcome::Win => 2,
+            Outcome::Lose => 1,
+            Outcome::Draw => 0,
+        };
+        Pick::from_u8((*self as u8 + pick_offset) % 3)
     }
 }
 
@@ -116,14 +117,10 @@ fn solve_part2(input: &str) -> usize {
             assert!(captures.len() == 3);
             if captures.len() == 3 {
                 let pick1_str = captures.get(1).unwrap().as_str();
-                let pick2_str = captures.get(2).unwrap().as_str();
+                let outcome_str = captures.get(2).unwrap().as_str();
                 let pick1 = Pick::new(pick1_str);
-                let outcome = Outcome::new(pick2_str);
-                let pick2 = match outcome {
-                    Outcome::Win => pick1.pick_wins_over_self(),
-                    Outcome::Lose => pick1.pick_looses_to_self(),
-                    Outcome::Draw => pick1.clone(),
-                };
+                let outcome = Outcome::new(outcome_str);
+                let pick2 = pick1.pick_for_outcome_against_self(&outcome);
                 let score = pick2.score() + outcome.score();
                 sum += score
             }
