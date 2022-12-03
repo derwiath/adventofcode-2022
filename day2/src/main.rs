@@ -96,15 +96,6 @@ fn solve_part1(input: &str) -> usize {
                 let pick2 = Pick::new(pick2_str);
                 let outcome = pick2.play(&pick1);
                 let score = pick2.score() + outcome.score();
-                println!(
-                    "{:?} {:?} -> {} ({} + {})",
-                    &pick1,
-                    &pick2,
-                    score,
-                    pick2.score(),
-                    outcome.score()
-                );
-                assert!(score > 0);
                 sum += score
             }
         } else if line.trim().len() > 0 {
@@ -132,17 +123,7 @@ fn solve_part2(input: &str) -> usize {
                     Outcome::Lose => pick1.pick_looses_to_self(),
                     Outcome::Draw => pick1.clone(),
                 };
-
                 let score = pick2.score() + outcome.score();
-                println!(
-                    "{:?} {:?} -> {} ({} + {})",
-                    &pick1,
-                    &pick2,
-                    score,
-                    pick2.score(),
-                    outcome.score()
-                );
-                assert!(score > 0);
                 sum += score
             }
         } else if line.trim().len() > 0 {
