@@ -32,14 +32,7 @@ fn solve_part1(input: &str) -> usize {
     }
     input
         .lines()
-        .filter_map(|line| {
-            let l = line.trim();
-            if l.len() > 0 {
-                Some(l)
-            } else {
-                None
-            }
-        })
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
         .map(|l| {
             let captures = RE.captures(l).unwrap();
             assert_eq!(captures.len(), 5);
@@ -71,14 +64,7 @@ fn solve_part2(input: &str) -> usize {
 
     input
         .lines()
-        .filter_map(|line| {
-            let l = line.trim();
-            if l.len() > 0 {
-                Some(l)
-            } else {
-                None
-            }
-        })
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
         .map(|l| {
             let captures = RE.captures(l).unwrap();
             assert_eq!(captures.len(), 5);
