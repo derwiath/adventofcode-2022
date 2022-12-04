@@ -5,21 +5,58 @@ extern crate regex;
 use std::env;
 use std::fs;
 
+#[derive(Debug, Clone)]
+struct Range {
+    start: usize,
+    end: usize,
+}
+
+impl Range {
+    fn new(start: usize, end: usize) -> Range {
+        Range { start, end }
+    }
+
+    fn contains(&self, other: &Range) -> bool {
+        other.start >= self.start && other.end <= self.end
+    }
+}
+
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+        static ref RE: regex::Regex = regex::Regex::new(r"(\d*)-(\d*),(\d*)-(\d*)").unwrap();
     }
-    let mut sum = 0;
-    for line in input.lines() {
-        if let Some(captures) = RE.captures(line) {
-            if captures.len() == 3 {
-                let count = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-                let _thing = captures.get(2).unwrap().as_str();
-                sum += count;
+    input
+        .lines()
+        .filter_map(|line| {
+            let l = line.trim();
+            if l.len() > 0 {
+                Some(l)
+            } else {
+                None
             }
-        }
-    }
-    sum
+        })
+        .map(|l| {
+            let captures = RE.captures(l).unwrap();
+            assert_eq!(captures.len(), 5);
+            let digits = [
+                captures.get(1).unwrap().as_str().parse::<usize>().unwrap(),
+                captures.get(2).unwrap().as_str().parse::<usize>().unwrap(),
+                captures.get(3).unwrap().as_str().parse::<usize>().unwrap(),
+                captures.get(4).unwrap().as_str().parse::<usize>().unwrap(),
+            ];
+            (
+                Range::new(digits[0], digits[1]),
+                Range::new(digits[2], digits[3]),
+            )
+        })
+        .map(|(r1, r2)| {
+            if r1.contains(&r2) || r2.contains(&r1) {
+                1
+            } else {
+                0
+            }
+        })
+        .fold(0, |acc, c| acc + c)
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -48,12 +85,17 @@ mod tests_day4 {
     use super::*;
 
     const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+2-4,6-8
+2-3,4-5
+5-7,7-9
+2-8,3-7
+6-6,4-6
+2-6,4-8
+";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 2);
     }
 
     const EXAMPLE2: &str = "";
