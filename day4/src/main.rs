@@ -26,6 +26,26 @@ impl Range {
     }
 }
 
+#[derive(Debug)]
+struct Pair {
+    r1: Range,
+    r2: Range,
+}
+
+impl Pair {
+    fn new(r1: Range, r2: Range) -> Pair {
+        Pair { r1, r2 }
+    }
+
+    fn contains(&self) -> bool {
+        self.r1.contains(&self.r2) || self.r2.contains(&self.r1)
+    }
+
+    fn overlaps(&self) -> bool {
+        self.r1.overlaps(&self.r2) || self.r2.overlaps(&self.r1)
+    }
+}
+
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*)-(\d*),(\d*)-(\d*)").unwrap();
@@ -42,18 +62,12 @@ fn solve_part1(input: &str) -> usize {
                 captures.get(3).unwrap().as_str().parse::<usize>().unwrap(),
                 captures.get(4).unwrap().as_str().parse::<usize>().unwrap(),
             ];
-            (
+            Pair::new(
                 Range::new(digits[0], digits[1]),
                 Range::new(digits[2], digits[3]),
             )
         })
-        .map(|(r1, r2)| {
-            if r1.contains(&r2) || r2.contains(&r1) {
-                1
-            } else {
-                0
-            }
-        })
+        .map(|p| if p.contains() { 1 } else { 0 })
         .fold(0, |acc, c| acc + c)
 }
 
@@ -74,18 +88,12 @@ fn solve_part2(input: &str) -> usize {
                 captures.get(3).unwrap().as_str().parse::<usize>().unwrap(),
                 captures.get(4).unwrap().as_str().parse::<usize>().unwrap(),
             ];
-            (
+            Pair::new(
                 Range::new(digits[0], digits[1]),
                 Range::new(digits[2], digits[3]),
             )
         })
-        .map(|(r1, r2)| {
-            if r1.overlaps(&r2) || r2.overlaps(&r1) {
-                1
-            } else {
-                0
-            }
-        })
+        .map(|p| if p.overlaps() { 1 } else { 0 })
         .fold(0, |acc, c| acc + c)
 }
 
