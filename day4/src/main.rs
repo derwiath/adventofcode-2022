@@ -4,6 +4,7 @@ extern crate regex;
 
 use std::env;
 use std::fs;
+use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 struct Range {
@@ -44,6 +45,11 @@ impl Pair {
     fn overlaps(&self) -> bool {
         self.r1.overlaps(&self.r2) || self.r2.overlaps(&self.r1)
     }
+}
+
+impl FromStr for Pair {
+    type Err = ParsePairError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {}
 }
 
 fn solve_part1(input: &str) -> usize {
