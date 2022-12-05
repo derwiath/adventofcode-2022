@@ -4,6 +4,37 @@ extern crate regex;
 
 use std::env;
 use std::fs;
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq)]
+struct Move {
+    count: usize,
+    from: usize,
+    to: usize,
+}
+
+impl Move {
+    fn new(count: usize, from: usize, to: usize) -> Move {
+        Move { count, from, to }
+    }
+}
+
+impl FromStr for Move {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref RE: regex::Regex =
+                regex::Regex::new(r"move (\d) from (\d) to (\d)").unwrap();
+        }
+        let captures = RE.captures(s).unwrap();
+        assert_eq!(captures.len(), 4);
+        let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
+        let from: usize = captures.get(2).unwrap().as_str().parse::<usize>().unwrap();
+        let to: usize = captures.get(3).unwrap().as_str().parse::<usize>().unwrap();
+        Ok(Self { count, from, to })
+    }
+}
 
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
@@ -54,6 +85,11 @@ mod tests_day5 {
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 7);
+    }
+
+    #[test]
+    fn test1_move_from_str() {
+        assert_eq!(Move::from_str("move 2 from 4 to 6"), Ok(Move::new(2, 4, 6)));
     }
 
     const EXAMPLE2: &str = "";
