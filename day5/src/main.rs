@@ -11,6 +11,7 @@ struct Row {
     row: Vec<Option<char>>,
 }
 
+#[allow(dead_code)]
 impl Row {
     fn new(row: Vec<Option<char>>) -> Row {
         Row { row }
@@ -118,7 +119,7 @@ impl FromStr for Move {
     }
 }
 
-fn solve_part1(input: &str) -> usize {
+fn solve_part1(input: &str) -> String {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
     }
@@ -131,7 +132,12 @@ fn solve_part1(input: &str) -> usize {
         .map(|l| Move::from_str(l).unwrap())
         .collect();
 
-    0
+    let stacks = Stacks::from_rows(&rows);
+    stacks
+        .stacks
+        .iter()
+        .map(|s| s.chars().next().unwrap_or(' '))
+        .collect::<String>()
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -173,7 +179,7 @@ move 1 from 1 to 2
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), "CMZ".to_string());
     }
 
     #[test]
