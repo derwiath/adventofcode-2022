@@ -56,6 +56,39 @@ impl FromStr for Row {
 }
 
 #[derive(Debug, PartialEq)]
+struct Stacks {
+    stacks: Vec<String>,
+}
+
+impl Stacks {
+    fn new(stacks: Vec<String>) -> Stacks {
+        Stacks { stacks }
+    }
+
+    fn from_rows(rows: &Vec<Row>) -> Stacks {
+        assert!(rows.len() > 0);
+        let stack_count = rows[0].len();
+        let mut stacks: Vec<String> = Vec::with_capacity(stack_count);
+
+        for row in rows {
+            assert_eq!(row.len(), stack_count);
+        }
+
+        for i in 0..stack_count {
+            let mut s = String::with_capacity(rows.len());
+            for row in rows {
+                if let Some(c) = row.get(i) {
+                    s.push(c);
+                }
+            }
+            stacks.push(s);
+        }
+
+        Stacks { stacks }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 struct Move {
     count: usize,
     from: usize,
@@ -162,6 +195,19 @@ move 1 from 1 to 2
     #[test]
     fn test1_row_2() {
         assert_eq!(Row::from_str(" 1   2   3 "), Err(()));
+    }
+
+    #[test]
+    fn test1_stacks_1() {
+        let rows: Vec<Row> = EXAMPLE1
+            .lines()
+            .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+            .map_while(|l| Row::from_str(&l).ok())
+            .collect();
+        assert_eq!(
+            Stacks::from_rows(&rows),
+            Stacks::new(vec!["NZ".to_string(), "DCM".to_string(), "P".to_string()])
+        );
     }
 
     const EXAMPLE2: &str = "";
