@@ -123,18 +123,15 @@ fn solve_part1(input: &str) -> usize {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
     }
     let rows: Vec<Row> = input.lines().map_while(|l| Row::from_str(l).ok()).collect();
+    let row_count = rows.len();
 
-    input
+    let moves: Vec<Move> = input
         .lines()
-        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+        .skip(row_count + 2)
+        .map(|l| Move::from_str(l).unwrap())
+        .collect();
+
+    0
 }
 
 fn solve_part2(input: &str) -> usize {
