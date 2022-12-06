@@ -2,6 +2,7 @@
 extern crate lazy_static;
 extern crate regex;
 
+use std::cmp;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -60,13 +61,12 @@ impl FromStr for Row {
 #[derive(PartialEq)]
 struct Stacks {
     stacks: Vec<String>,
-    row_count: usize,
 }
 
 #[allow(dead_code)]
 impl Stacks {
-    fn new(stacks: Vec<String>, row_count: usize) -> Stacks {
-        Stacks { stacks, row_count }
+    fn new(stacks: Vec<String>) -> Stacks {
+        Stacks { stacks }
     }
 
     fn from_rows(rows: &Vec<Row>) -> Stacks {
@@ -75,6 +75,7 @@ impl Stacks {
         let mut stacks: Vec<String> = Vec::with_capacity(stack_count);
 
         for row in rows {
+            println!("row: {:?}", row);
             assert_eq!(row.len(), stack_count);
         }
 
@@ -87,20 +88,35 @@ impl Stacks {
             stacks.push(s);
         }
 
-        Stacks {
-            stacks,
-            row_count: rows.len(),
+        Stacks { stacks }
+    }
+
+    fn apply_move(&mut self, m: &Move) {
+        assert!(m.from < self.stacks.len());
+        assert!(m.to < self.stacks.len());
+
+        let count = cmp::min(self.stacks[m.from].len(), m.count);
+        {
+            let moved = self.stacks[m.from]
+                .chars()
+                .rev()
+                .take(count)
+                .collect::<String>();
+            self.stacks[m.to].push_str(moved.as_str());
         }
+        let from = &mut self.stacks[m.from];
+        from.truncate(from.len() - count);
     }
 }
 
 impl fmt::Debug for Stacks {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for stack in &self.stacks {
-            writeln!(f, "{}", stack)?;
-        }
-        for row in 0..self.row_count {
-            let rev_row = self.row_count - row - 1;
+        //for stack in &self.stacks {
+        //    writeln!(f, "{}", stack)?;
+        //}
+        let row_count = self.stacks.iter().map(|s| s.len()).max().unwrap();
+        for row in 0..row_count {
+            let rev_row = row_count - row - 1;
             for stack in &self.stacks {
                 if rev_row < stack.len() {
                     write!(f, "[{}] ", stack.chars().skip(rev_row).next().unwrap())?;
@@ -134,14 +150,15 @@ impl FromStr for Move {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref RE: regex::Regex =
-                regex::Regex::new(r"move (\d) from (\d) to (\d)").unwrap();
+                regex::Regex::new(r"move (\d*) from (\d*) to (\d*)").unwrap();
         }
+        println!("move s: {}", s);
         let captures = RE.captures(s).unwrap();
         assert_eq!(captures.len(), 4);
         let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
         let from: usize = captures.get(2).unwrap().as_str().parse::<usize>().unwrap();
         let to: usize = captures.get(3).unwrap().as_str().parse::<usize>().unwrap();
-        Ok(Self { count, from, to })
+        Ok(Self::new(count, from - 1, to - 1))
     }
 }
 
@@ -149,20 +166,33 @@ fn solve_part1(input: &str) -> String {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
     }
-    let rows: Vec<Row> = input.lines().map_while(|l| Row::from_str(l).ok()).collect();
+    let rows: Vec<Row> = input
+        .lines()
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+        .map_while(|l| Row::from_str(l).ok())
+        .collect();
     let row_count = rows.len();
 
     let moves: Vec<Move> = input
         .lines()
-        .skip(row_count + 2)
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+        .skip(row_count + 1)
         .map(|l| Move::from_str(l).unwrap())
         .collect();
 
-    let stacks = Stacks::from_rows(&rows);
+    let mut stacks = Stacks::from_rows(&rows);
+    println!("before");
+    println!("{:?}", stacks);
+    for m in &moves {
+        println!("{:?}", m);
+        stacks.apply_move(m);
+        println!("{:?}", stacks);
+    }
+
     stacks
         .stacks
         .iter()
-        .map(|s| s.chars().next().unwrap_or(' '))
+        .map(|s| s.chars().last().unwrap_or(' '))
         .collect::<String>()
 }
 
@@ -210,7 +240,7 @@ move 1 from 1 to 2
 
     #[test]
     fn test1_move_from_str() {
-        assert_eq!(Move::from_str("move 2 from 4 to 6"), Ok(Move::new(2, 4, 6)));
+        assert_eq!(Move::from_str("move 2 from 4 to 6"), Ok(Move::new(2, 3, 5)));
     }
 
     #[test]
@@ -235,10 +265,22 @@ move 1 from 1 to 2
             .collect();
         assert_eq!(
             Stacks::from_rows(&rows),
-            Stacks::new(
-                vec!["ZN".to_string(), "MCD".to_string(), "P".to_string()],
-                3
-            )
+            Stacks::new(vec!["ZN".to_string(), "MCD".to_string(), "P".to_string()])
+        );
+    }
+
+    #[test]
+    fn test1_stacks_2() {
+        let rows: Vec<Row> = EXAMPLE1
+            .lines()
+            .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+            .map_while(|l| Row::from_str(&l).ok())
+            .collect();
+        let mut stacks = Stacks::from_rows(&rows);
+        stacks.apply_move(&Move::new(2, 1, 2));
+        assert_eq!(
+            stacks,
+            Stacks::new(vec!["ZN".to_string(), "M".to_string(), "PDC".to_string()])
         );
     }
 
