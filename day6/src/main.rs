@@ -1,25 +1,30 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fs;
 
 fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+    if input.len() < 4 {
+        return 0;
     }
-    input
-        .lines()
-        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+    let process_count = input.len() - 4;
+    let mut i = 0;
+    while i < process_count {
+        let candidate = &input[i..i + 4];
+
+        let mut unique_count = 0;
+        for (j, needle) in candidate.chars().enumerate() {
+            if candidate[j + 1..].chars().find(|c| c == &needle).is_none() {
+                unique_count += 1;
+            } else {
+                break;
+            }
+        }
+        if unique_count == 4 {
+            return i + unique_count;
+        }
+        i += unique_count + 1;
+    }
+
+    return 0;
 }
 
 fn solve_part2(input: &str) -> usize {
