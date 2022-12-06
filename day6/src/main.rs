@@ -9,15 +9,11 @@ fn find_marker_pos(input: &str, marker_len: usize) -> usize {
     let mut i = 0;
     while i < process_count {
         let candidate = &input[i..i + marker_len];
-
-        let mut unique_count = 0;
-        for (j, needle) in candidate.chars().enumerate() {
-            if candidate[j + 1..].chars().find(|c| c == &needle).is_none() {
-                unique_count += 1;
-            } else {
-                break;
-            }
-        }
+        let unique_count = candidate
+            .chars()
+            .enumerate()
+            .take_while(|(j, needle)| candidate[j + 1..].chars().find(|c| c == needle).is_none())
+            .count();
         if unique_count == marker_len {
             return i + unique_count;
         }
