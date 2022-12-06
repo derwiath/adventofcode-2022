@@ -47,19 +47,25 @@ fn main() {
 mod tests_day6 {
     use super::*;
 
-    const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+    const EXAMPLE1_1: &str = "mjqjpqmgbljsphdztnvjfqwrcgsmlb";
+    const EXAMPLE1_2: &str = "bvwbjplbgvbhsrlpgdmjqwftvncz";
+    const EXAMPLE1_3: &str = "nppdvjthqldpwncqszvftbrmjlhg";
+    const EXAMPLE1_4: &str = "nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg";
+    const EXAMPLE1_5: &str = "zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1_1), 7);
+        assert_eq!(solve_part1(EXAMPLE1_2), 5);
+        assert_eq!(solve_part1(EXAMPLE1_3), 6);
+        assert_eq!(solve_part1(EXAMPLE1_4), 10);
+        assert_eq!(solve_part1(EXAMPLE1_5), 11);
     }
 
-    const EXAMPLE2: &str = "";
+    const EXAMPLE2_1: &str = "";
 
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE2_1), 0);
     }
 }
