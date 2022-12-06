@@ -61,6 +61,7 @@ struct Stacks {
     stacks: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl Stacks {
     fn new(stacks: Vec<String>) -> Stacks {
         Stacks { stacks }
@@ -96,6 +97,7 @@ struct Move {
     to: usize,
 }
 
+#[allow(dead_code)]
 impl Move {
     fn new(count: usize, from: usize, to: usize) -> Move {
         Move { count, from, to }
