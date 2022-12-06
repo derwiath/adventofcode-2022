@@ -107,6 +107,19 @@ impl Stacks {
         let from = &mut self.stacks[m.from];
         from.truncate(from.len() - count);
     }
+    fn apply_move2(&mut self, m: &Move) {
+        assert!(m.from < self.stacks.len());
+        assert!(m.to < self.stacks.len());
+
+        let count = cmp::min(self.stacks[m.from].len(), m.count);
+        {
+            let from_len = self.stacks[m.from].len();
+            let moved = self.stacks[m.from][from_len - count..].to_string();
+            self.stacks[m.to].push_str(moved.as_str());
+        }
+        let from = &mut self.stacks[m.from];
+        from.truncate(from.len() - count);
+    }
 }
 
 impl fmt::Debug for Stacks {
@@ -196,8 +209,38 @@ fn solve_part1(input: &str) -> String {
         .collect::<String>()
 }
 
-fn solve_part2(input: &str) -> usize {
-    input.len()
+fn solve_part2(input: &str) -> String {
+    lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+    }
+    let rows: Vec<Row> = input
+        .lines()
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+        .map_while(|l| Row::from_str(l).ok())
+        .collect();
+    let row_count = rows.len();
+
+    let moves: Vec<Move> = input
+        .lines()
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+        .skip(row_count + 1)
+        .map(|l| Move::from_str(l).unwrap())
+        .collect();
+
+    let mut stacks = Stacks::from_rows(&rows);
+    println!("before");
+    println!("{:?}", stacks);
+    for m in &moves {
+        println!("{:?}", m);
+        stacks.apply_move2(m);
+        println!("{:?}", stacks);
+    }
+
+    stacks
+        .stacks
+        .iter()
+        .map(|s| s.chars().last().unwrap_or(' '))
+        .collect::<String>()
 }
 
 fn main() {
