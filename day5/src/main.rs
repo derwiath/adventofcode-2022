@@ -3,6 +3,7 @@ extern crate lazy_static;
 extern crate regex;
 
 use std::env;
+use std::fmt;
 use std::fs;
 use std::str::FromStr;
 
@@ -56,15 +57,16 @@ impl FromStr for Row {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 struct Stacks {
     stacks: Vec<String>,
+    row_count: usize,
 }
 
 #[allow(dead_code)]
 impl Stacks {
-    fn new(stacks: Vec<String>) -> Stacks {
-        Stacks { stacks }
+    fn new(stacks: Vec<String>, row_count: usize) -> Stacks {
+        Stacks { stacks, row_count }
     }
 
     fn from_rows(rows: &Vec<Row>) -> Stacks {
@@ -77,16 +79,38 @@ impl Stacks {
         }
 
         for i in 0..stack_count {
-            let mut s = String::with_capacity(rows.len());
-            for row in rows {
-                if let Some(c) = row.get(i) {
-                    s.push(c);
-                }
-            }
+            let s = rows
+                .iter()
+                .filter_map(|r| r.get(i))
+                .rev()
+                .collect::<String>();
             stacks.push(s);
         }
 
-        Stacks { stacks }
+        Stacks {
+            stacks,
+            row_count: rows.len(),
+        }
+    }
+}
+
+impl fmt::Debug for Stacks {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for stack in &self.stacks {
+            writeln!(f, "{}", stack)?;
+        }
+        for row in 0..self.row_count {
+            let rev_row = self.row_count - row - 1;
+            for stack in &self.stacks {
+                if rev_row < stack.len() {
+                    write!(f, "[{}] ", stack.chars().skip(rev_row).next().unwrap())?;
+                } else {
+                    write!(f, " .  ")?;
+                }
+            }
+            writeln!(f, "")?;
+        }
+        Ok(())
     }
 }
 
@@ -211,7 +235,10 @@ move 1 from 1 to 2
             .collect();
         assert_eq!(
             Stacks::from_rows(&rows),
-            Stacks::new(vec!["NZ".to_string(), "DCM".to_string(), "P".to_string()])
+            Stacks::new(
+                vec!["ZN".to_string(), "MCD".to_string(), "P".to_string()],
+                3
+            )
         );
     }
 
