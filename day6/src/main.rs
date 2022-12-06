@@ -1,14 +1,14 @@
 use std::env;
 use std::fs;
 
-fn solve_part1(input: &str) -> usize {
-    if input.len() < 4 {
+fn find_marker_pos(input: &str, marker_len: usize) -> usize {
+    if input.len() < marker_len {
         return 0;
     }
-    let process_count = input.len() - 4;
+    let process_count = input.len() - marker_len;
     let mut i = 0;
     while i < process_count {
-        let candidate = &input[i..i + 4];
+        let candidate = &input[i..i + marker_len];
 
         let mut unique_count = 0;
         for (j, needle) in candidate.chars().enumerate() {
@@ -18,17 +18,20 @@ fn solve_part1(input: &str) -> usize {
                 break;
             }
         }
-        if unique_count == 4 {
+        if unique_count == marker_len {
             return i + unique_count;
         }
         i += unique_count + 1;
     }
-
     return 0;
 }
 
+fn solve_part1(input: &str) -> usize {
+    find_marker_pos(input, 4)
+}
+
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    find_marker_pos(input, 14)
 }
 
 fn main() {
