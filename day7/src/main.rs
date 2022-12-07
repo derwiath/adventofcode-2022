@@ -7,19 +7,36 @@ use std::fs;
 
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+        static ref RE: regex::Regex = regex::Regex::new(r"^(\d*) (.*)").unwrap();
     }
-    input
+    let sizes: Vec<usize> = input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
         .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
+            if let Some(captures) = RE.captures(l) {
+                assert_eq!(captures.len(), 3);
+                let size: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
+                // let filename= captures.get(2).unwrap().as_str();
+                size
+            } else {
+                0
+            }
         })
-        .fold(0, |acc, (count, _)| acc + count)
+        .collect();
+
+    let mut sum = 0;
+    let mut dir_size = 0;
+    for size in sizes {
+        if size > 0 {
+            dir_size += size
+        } else {
+            if dir_size <= 100000 {
+                sum += dir_size
+            }
+            dir_size = 0;
+        }
+    }
+    sum
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -48,12 +65,33 @@ mod tests_day7 {
     use super::*;
 
     const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 95437);
     }
 
     const EXAMPLE2: &str = "";
