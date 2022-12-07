@@ -2,41 +2,63 @@
 extern crate lazy_static;
 extern crate regex;
 
+use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::str::Lines;
 
-fn solve_part1(input: &str) -> usize {
+fn process<'a>(mut lines: Lines<'a>, path: String) -> (usize, Lines<'a>, HashMap<String, usize>) {
     lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"^(\d*) (.*)").unwrap();
+        static ref CD_RE: regex::Regex = regex::Regex::new(r"^\$ cd ([a-z]*|/)").unwrap();
+        static ref CD_UP_RE: regex::Regex = regex::Regex::new(r"^\$ cd \.\.").unwrap();
+        static ref LS_RE: regex::Regex = regex::Regex::new(r"^\$ ls\b").unwrap();
+        static ref FILE_RE: regex::Regex = regex::Regex::new(r"^(\d*) (.*)").unwrap();
+        static ref DIR_RE: regex::Regex = regex::Regex::new(r"^dir (.*)").unwrap();
     }
-    let sizes: Vec<usize> = input
-        .lines()
-        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            if let Some(captures) = RE.captures(l) {
-                assert_eq!(captures.len(), 3);
-                let size: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-                // let filename= captures.get(2).unwrap().as_str();
-                size
-            } else {
-                0
-            }
-        })
-        .collect();
 
-    let mut sum = 0;
+    println!("Enter {}", path);
+
+    let mut size_map: HashMap<String, usize> = HashMap::new();
+
     let mut dir_size = 0;
-    for size in sizes {
-        if size > 0 {
-            dir_size += size
-        } else {
-            if dir_size <= 100000 {
-                sum += dir_size
-            }
-            dir_size = 0;
+    while let Some(line) = lines.next() {
+        println!("{}", line);
+        if let Some(_) = CD_UP_RE.captures(line) {
+            println!("CD_UP_RE");
+            break;
+        } else if let Some(cap) = CD_RE.captures(line) {
+            println!("CD_RE");
+            assert_eq!(cap.len(), 2);
+            let name = cap.get(1).unwrap().as_str();
+            let subpath = format!("{}/{}", path, name);
+            let (sub_size, sub_lines, sub_size_map) = process(lines, subpath);
+            lines = sub_lines;
+            sub_size_map.into_iter().for_each(|(p, s)| {
+                assert_eq!(size_map.insert(p, s), None);
+            });
+            dir_size += sub_size;
+        } else if let Some(_) = LS_RE.captures(line) {
+        } else if let Some(_) = DIR_RE.captures(line) {
+        } else if let Some(cap) = FILE_RE.captures(line) {
+            assert_eq!(cap.len(), 3);
+            let file_size: usize = cap.get(1).unwrap().as_str().parse::<usize>().unwrap();
+            dir_size += file_size;
+        } else if line.len() > 0 {
+            assert!(false, "Failed to parse {}", line);
         }
     }
-    sum
+    println!("Exit {}, {}", path, dir_size);
+    assert_eq!(size_map.insert(path, dir_size), None);
+    (dir_size, lines, size_map)
+}
+
+fn solve_part1(input: &str) -> usize {
+    let (_, _, size_map) = process(input.lines(), "C:".to_owned());
+
+    size_map
+        .into_values()
+        .filter(|size| size <= &100000)
+        .fold(0, |acc, size| acc + size)
 }
 
 fn solve_part2(input: &str) -> usize {
