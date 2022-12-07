@@ -62,7 +62,13 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let (used_size, _, size_map) = process(input.lines(), "C:".to_owned());
+    let min_size_to_delete = used_size - (70000000 - 30000000);
+    size_map
+        .into_values()
+        .filter(|size| size >= &min_size_to_delete)
+        .min()
+        .unwrap()
 }
 
 fn main() {
@@ -116,10 +122,8 @@ $ ls
         assert_eq!(solve_part1(EXAMPLE1), 95437);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 24933642);
     }
 }
