@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 
@@ -20,8 +21,31 @@ fn solve_part1(input: &str) -> usize {
         .collect();
     let height = trees.len() / width;
     let border_visible = width * 2 + (height - 2) * 2;
+    let mut visible: HashSet<usize> = HashSet::new();
 
-    border_visible
+    for row_index in 1..width - 1 {
+        let row_start_index = row_index * width;
+        let row = &trees[row_start_index..row_start_index + width];
+        let mut left_max = row[0];
+        let mut left_max_index = 0;
+        for tree_index in 1..width - 1 {
+            if row[tree_index] > left_max {
+                visible.insert(row_start_index + tree_index);
+                left_max_index = tree_index;
+                left_max = row[tree_index];
+            }
+        }
+
+        let mut right_max = row[width - 1];
+        for tree_index in (left_max_index + 1..width - 1).rev() {
+            if row[tree_index] > right_max {
+                visible.insert(row_start_index + tree_index);
+                right_max = row[tree_index];
+            }
+        }
+    }
+
+    border_visible + visible.len()
 }
 
 fn solve_part2(input: &str) -> usize {
