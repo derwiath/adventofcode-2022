@@ -1,25 +1,27 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fs;
 
 fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
-    }
-    input
+    let mut width = 0;
+    let trees: Vec<u8> = input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
         .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
+            let mut row: Vec<u8> = Vec::new();
+            for c in l.chars() {
+                assert!(c.is_digit(10));
+                let digit = c.to_digit(10).unwrap();
+                row.push(digit as u8);
+            }
+            width += 1;
+            row
         })
-        .fold(0, |acc, (count, _)| acc + count)
+        .flatten()
+        .collect();
+    let height = trees.len() / width;
+    let border_visible = width * 2 + (height - 2) * 2;
+
+    border_visible
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -48,12 +50,15 @@ mod tests_day8 {
     use super::*;
 
     const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+30373
+25512
+65332
+33549
+35390";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 21);
     }
 
     const EXAMPLE2: &str = "";
