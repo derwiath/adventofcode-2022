@@ -58,6 +58,10 @@ impl Forrest {
         let column_start_index = x * self.height;
         &self.column_major[column_start_index..column_start_index + self.height]
     }
+
+    fn tree_height(&self, x: usize, y: usize) -> u8 {
+        self.trees[y * self.width + x]
+    }
 }
 
 fn solve_part1(input: &str) -> usize {
@@ -114,8 +118,34 @@ fn solve_part1(input: &str) -> usize {
     forrest.border_visible() + visible.len()
 }
 
+fn score(forrest: &Forrest, x: usize, y: usize) -> usize {
+    let tree_height = forrest.tree_height(x, y);
+
+    let mut equal_found = false;
+    let row = forrest.get_row(y);
+    let is_visible = |h: &&u8| -> bool {
+        if h < &&tree_height {
+            true
+        } else if h == &&tree_height {
+            if equal_found {
+                false
+            } else {
+                equal_found = true;
+                true
+            }
+        } else {
+            false
+        }
+    };
+    let right_view = row[x + 1..].iter().take_while(is_visible).count();
+    equal_found = false;
+    let left_view = row[0..x].iter().rev().take_while(is_visible).count();
+
+    left_view * right_view
+}
+
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let forrest = Forrest::from_str(input);
 }
 
 fn main() {
@@ -151,10 +181,8 @@ mod tests_day8 {
         assert_eq!(solve_part1(EXAMPLE1), 21);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 8);
     }
 }
