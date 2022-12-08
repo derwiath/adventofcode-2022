@@ -23,24 +23,48 @@ fn solve_part1(input: &str) -> usize {
     let border_visible = width * 2 + (height - 2) * 2;
     let mut visible: HashSet<usize> = HashSet::new();
 
-    for row_index in 1..width - 1 {
-        let row_start_index = row_index * width;
+    for y in 1..height - 1 {
+        let row_start_index = y * width;
         let row = &trees[row_start_index..row_start_index + width];
         let mut left_max = row[0];
         let mut left_max_index = 0;
-        for tree_index in 1..width - 1 {
-            if row[tree_index] > left_max {
-                visible.insert(row_start_index + tree_index);
-                left_max_index = tree_index;
-                left_max = row[tree_index];
+        for x in 1..width - 1 {
+            if row[x] > left_max {
+                visible.insert(row_start_index + x);
+                left_max_index = x;
+                left_max = row[x];
             }
         }
 
         let mut right_max = row[width - 1];
-        for tree_index in (left_max_index + 1..width - 1).rev() {
-            if row[tree_index] > right_max {
-                visible.insert(row_start_index + tree_index);
-                right_max = row[tree_index];
+        for x in (left_max_index + 1..width - 1).rev() {
+            if row[x] > right_max {
+                visible.insert(row_start_index + x);
+                right_max = row[x];
+            }
+        }
+    }
+
+    for x in 1..width - 1 {
+        let mut top_max = trees[x];
+        let mut top_max_y = 0;
+        for y in 1..height - 1 {
+            let tree_index = width * y + x;
+            let height = trees[tree_index];
+            if height > top_max {
+                visible.insert(tree_index);
+                top_max_y = y;
+                top_max = height;
+            }
+        }
+
+        let mut bottom_max = trees[width * (height - 1) + x];
+        for y in (top_max_y + 1..height - 1).rev() {
+            let tree_index = width * y + x;
+            let height = trees[tree_index];
+            if height > bottom_max {
+                visible.insert(tree_index);
+                bottom_max = height;
             }
         }
     }
