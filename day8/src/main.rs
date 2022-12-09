@@ -58,10 +58,6 @@ impl Forrest {
         let column_start_index = x * self.height;
         &self.column_major[column_start_index..column_start_index + self.height]
     }
-
-    fn tree_height(&self, x: usize, y: usize) -> u8 {
-        self.trees[y * self.width + x]
-    }
 }
 
 fn solve_part1(input: &str) -> usize {
@@ -119,33 +115,90 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn score(forrest: &Forrest, x: usize, y: usize) -> usize {
-    let tree_height = forrest.tree_height(x, y);
-
-    let mut equal_found = false;
     let row = forrest.get_row(y);
-    let is_visible = |h: &&u8| -> bool {
-        if h < &&tree_height {
-            true
-        } else if h == &&tree_height {
-            if equal_found {
-                false
-            } else {
-                equal_found = true;
-                true
-            }
-        } else {
-            false
-        }
-    };
-    let right_view = row[x + 1..].iter().take_while(is_visible).count();
-    equal_found = false;
-    let left_view = row[0..x].iter().rev().take_while(is_visible).count();
+    let column = forrest.get_column(x);
+    let tree_height = row[x];
 
-    left_view * right_view
+    let right_less_view = row[x + 1..]
+        .iter()
+        .take_while(|h| h < &&tree_height)
+        .count();
+    let right_view = right_less_view
+        + if x + right_less_view + 1 < row.len() && row[x + right_less_view + 1] == tree_height {
+            1
+        } else {
+            0
+        };
+
+    let left_less_view = row[0..x]
+        .iter()
+        .rev()
+        .take_while(|h| h < &&tree_height)
+        .count();
+
+    // 30373
+    // 25512
+    // 65332
+    // 33549
+    // 35390
+    let left_view = left_less_view
+        + if x > left_less_view && row[x - left_less_view - 1] == tree_height {
+            1
+        } else {
+            0
+        };
+
+    let up_less_view = column[0..y]
+        .iter()
+        .rev()
+        .take_while(|h| h < &&tree_height)
+        .count();
+    let up_view = up_less_view
+        + if y > up_less_view && column[y - up_less_view - 1] == tree_height {
+            1
+        } else {
+            0
+        };
+    let down_less_view = column[y + 1..]
+        .iter()
+        .take_while(|h| h < &&tree_height)
+        .count();
+    let down_view = down_less_view
+        + if y + down_less_view + 1 < column.len() && column[y + down_less_view + 1] == tree_height
+        {
+            1
+        } else {
+            0
+        };
+
+    let s = [left_view, right_view, up_view, down_view]
+        .into_iter()
+        .map(|s| s.max(1))
+        .fold(1, |acc, s| acc * s);
+    println!("({}, {}) = {}", x, y, s);
+    /*
+    println!(" row {:?}", row);
+    println!(" column {:?}", column);
+    println!(" left  {} left_less  {}", left_view, left_less_view);
+    println!(" right {} right_less {}", right_view, right_less_view);
+    println!(" up    {} up_less    {}", up_view, up_less_view);
+    println!(" down  {} down_less  {}", down_view, down_less_view);
+    */
+
+    s
 }
 
 fn solve_part2(input: &str) -> usize {
     let forrest = Forrest::from_str(input);
+    let mut m = 0;
+
+    for x in 0..forrest.width {
+        for y in 0..forrest.height {
+            let s = score(&forrest, x, y);
+            m = s.max(m);
+        }
+    }
+    m
 }
 
 fn main() {
@@ -184,5 +237,27 @@ mod tests_day8 {
     #[test]
     fn test2_1() {
         assert_eq!(solve_part2(EXAMPLE1), 8);
+    }
+
+    #[test]
+    fn test2_2() {
+        let forrest = Forrest::from_str(EXAMPLE1);
+        assert_eq!(score(&forrest, 2, 1), 4);
+    }
+
+    #[test]
+    fn test2_3() {
+        let forrest = Forrest::from_str(EXAMPLE1);
+        assert_eq!(score(&forrest, 2, 3), 4);
+    }
+    #[test]
+    fn test2_4() {
+        let forrest = Forrest::from_str(EXAMPLE1);
+        assert_eq!(score(&forrest, 0, 0), 2);
+    }
+    #[test]
+    fn test2_5() {
+        let forrest = Forrest::from_str(EXAMPLE1);
+        assert_eq!(score(&forrest, 0, 2), 2);
     }
 }
