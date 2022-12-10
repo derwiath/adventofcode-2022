@@ -125,7 +125,25 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let moves = read_moves(input);
+    let mut worm: Vec<Vector2> = (0..10).map(|_| Vector2::new(0, 0)).collect();
+    let mut visited: HashSet<Vector2> = HashSet::new();
+    visited.insert(worm[9].clone());
+
+    for (m, _) in moves {
+        let m_step = m.sign();
+        let step_count = m.manhattan_distance();
+
+        for _ in 0..step_count {
+            worm[0] = worm[0].add(&m_step);
+
+            for i in 1..10 {
+                worm[i] = worm[i].follow(&worm[i - 1]);
+            }
+            visited.insert(worm[9].clone());
+        }
+    }
+    visited.len()
 }
 
 fn main() {
