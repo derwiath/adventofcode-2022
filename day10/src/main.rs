@@ -5,7 +5,26 @@ extern crate regex;
 use std::env;
 use std::fs;
 
-fn solve_part1(input: &str) -> usize {
+#[derive(Debug, PartialEq)]
+enum Instr {
+    Noop,
+    Addx(isize),
+}
+
+impl Instr {
+    fn from_str(s: &str) -> Instr {
+        if s == "noop" {
+            Instr::Noop
+        } else if s.starts_with("addx ") {
+            let number = s["addx ".len()..].parse::<isize>().unwrap();
+            Instr::Addx(number)
+        } else {
+            panic!("Failed to parse instruction from: {}", s);
+        }
+    }
+}
+
+fn solve_part1(input: &str) -> isize {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
     }
@@ -15,15 +34,15 @@ fn solve_part1(input: &str) -> usize {
         .map(|l| {
             let captures = RE.captures(l).unwrap();
             assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
+            let count: isize = captures.get(1).unwrap().as_str().parse::<isize>().unwrap();
             let thing = captures.get(2).unwrap().as_str();
             (count, thing)
         })
         .fold(0, |acc, (count, _)| acc + count)
 }
 
-fn solve_part2(input: &str) -> usize {
-    input.len()
+fn solve_part2(input: &str) -> isize {
+    input.len() as isize
 }
 
 fn main() {
@@ -54,6 +73,16 @@ mod tests_day10 {
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 7);
+    }
+
+    #[test]
+    fn test_instr_1() {
+        assert_eq!(Instr::from_str("noop"), Instr::Noop);
+    }
+
+    #[test]
+    fn test_instr_2() {
+        assert_eq!(Instr::from_str("addx 314"), Instr::Addx(314));
     }
 
     const EXAMPLE2: &str = "";
