@@ -1,7 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fs;
 
@@ -24,21 +20,63 @@ impl Instr {
     }
 }
 
-fn solve_part1(input: &str) -> isize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
-    }
+fn read_instructions(input: &str) -> Vec<Instr> {
     input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: isize = captures.get(1).unwrap().as_str().parse::<isize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+        .map(|l| Instr::from_str(l))
+        .collect()
+}
+
+fn sample_signal_strength(cycle: isize, x: isize) -> Option<isize> {
+    if cycle >= 20 && ((cycle - 20) % 40 == 0) {
+        println!("cycle {}, x {}, strength {}", cycle, x, cycle * x);
+        Some(cycle * x)
+    } else {
+        None
+    }
+}
+
+fn solve_part1(input: &str) -> isize {
+    let instructions = read_instructions(input);
+
+    let mut x: isize = 1;
+    let mut cycle: isize = 0;
+    let mut sum: isize = 0;
+    for (i, instr) in instructions.iter().enumerate() {
+        match instr {
+            Instr::Noop => {
+                cycle += 1;
+                sum += match sample_signal_strength(cycle, x) {
+                    Some(s) => {
+                        println!("{}: noop", i);
+                        s
+                    }
+                    None => 0,
+                };
+            }
+            Instr::Addx(y) => {
+                cycle += 1;
+                sum += match sample_signal_strength(cycle, x) {
+                    Some(s) => {
+                        println!("{}: addx({}) #1", i, y);
+                        s
+                    }
+                    None => 0,
+                };
+                cycle += 1;
+                sum += match sample_signal_strength(cycle, x) {
+                    Some(s) => {
+                        println!("{}: addx({}) #2", i, y);
+                        s
+                    }
+                    None => 0,
+                };
+                x += y;
+            }
+        }
+    }
+    sum
 }
 
 fn solve_part2(input: &str) -> isize {
