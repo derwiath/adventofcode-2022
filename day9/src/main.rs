@@ -164,10 +164,23 @@ R 2";
         assert_eq!(solve_part1(EXAMPLE1), 13);
     }
 
-    const EXAMPLE2: &str = "";
+    const EXAMPLE2: &str = "
+R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20";
 
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 1);
+    }
+
+    #[test]
+    fn test2_2() {
+        assert_eq!(solve_part2(EXAMPLE2), 36);
     }
 }
