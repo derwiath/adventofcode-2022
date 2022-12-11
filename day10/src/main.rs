@@ -79,8 +79,43 @@ fn solve_part1(input: &str) -> isize {
     sum
 }
 
-fn solve_part2(input: &str) -> isize {
-    input.len() as isize
+fn print_screen(label: &str, s: &str) {
+    println!("{}", label);
+    for row in 0..6 {
+        println!("{}", &s[row * 40..(row + 1) * 40]);
+    }
+}
+
+fn solve_part2(input: &str) -> String {
+    let instructions = read_instructions(input);
+
+    let mut sprite_position: isize = 1;
+    let mut sprite_positions: Vec<isize> = Vec::new();
+    for instr in instructions.iter() {
+        match instr {
+            Instr::Noop => {
+                sprite_positions.push(sprite_position);
+            }
+            Instr::Addx(y) => {
+                sprite_positions.push(sprite_position);
+                sprite_positions.push(sprite_position);
+                sprite_position += y;
+            }
+        }
+    }
+    sprite_positions
+        .into_iter()
+        .enumerate()
+        .map(|(i, pos)| -> char {
+            let crt_pos: isize = (i as isize) % 40;
+            //println!("{} {} {} ({}) ", i, crt_pos, pos, (crt_pos - pos).abs());
+            if (crt_pos - pos).abs() <= 1 {
+                '#'
+            } else {
+                '.'
+            }
+        })
+        .collect::<String>()
 }
 
 fn main() {
@@ -97,7 +132,7 @@ fn main() {
     println!("Answer 1: {}", answer1);
 
     let answer2 = solve_part2(&input);
-    println!("Answer 2: {}", answer2);
+    print_screen("Answer 2", &answer2);
 }
 
 #[cfg(test)]
@@ -119,11 +154,19 @@ mod tests_day10 {
         assert_eq!(Instr::from_str("addx 314"), Instr::Addx(314));
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        let candidate = solve_part2(EXAMPLE1);
+
+        let example1_answer = EXAMPLE1_SCREEN
+            .chars()
+            .filter(|c| *c != '\n')
+            .collect::<String>();
+        if candidate != example1_answer {
+            print_screen("candidate", &candidate);
+            print_screen("answer", &example1_answer);
+            assert_eq!(candidate, example1_answer);
+        }
     }
 
     const EXAMPLE1: &str = "
@@ -273,4 +316,12 @@ addx -11
 noop
 noop
 noop";
+
+    const EXAMPLE1_SCREEN: &str = "
+##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....";
 }
