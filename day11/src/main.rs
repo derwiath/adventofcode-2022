@@ -49,6 +49,86 @@ impl FromStr for Operation {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct Test {
+    denom: usize,
+    throw_to_true: usize,
+    throw_to_false: usize,
+}
+
+impl FromStr for Test {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Test, Self::Err> {
+        assert_eq!(s.lines().count(), 3);
+        let mut lines = s.lines();
+        let line0: &str = lines.next().unwrap();
+        let line1: &str = lines.next().unwrap();
+        let line2: &str = lines.next().unwrap();
+        let denom = Test::denom_from_str(line0)?;
+        let throw1 = Test::action_from_str(line1)?;
+        let throw2 = Test::action_from_str(line2)?;
+        let throws = if throw1.0 == true {
+            (throw1.1, throw2.1)
+        } else {
+            (throw2.1, throw1.1)
+        };
+        Ok(Test::new(denom, throws.0, throws.1))
+    }
+}
+
+impl Test {
+    fn new(denom: usize, throw_to_true: usize, throw_to_false: usize) -> Test {
+        Test {
+            denom,
+            throw_to_true,
+            throw_to_false,
+        }
+    }
+
+    fn denom_from_str(s: &str) -> Result<usize, String> {
+        //  Test: divisible by 19
+        lazy_static! {
+            static ref RE: regex::Regex = regex::Regex::new(r"Test: divisible by (\d*)").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            assert_eq!(captures.len(), 2);
+            let denom = captures.get(1).unwrap().as_str();
+            if let Ok(denom_number) = denom.parse::<usize>() {
+                Ok(denom_number)
+            } else {
+                Err("Failed to parse denom number".to_string())
+            }
+        } else {
+            Err(format!("Failed to match denom regexp for '{}'", s))
+        }
+    }
+
+    fn action_from_str(s: &str) -> Result<(bool, usize), String> {
+        //    If true: throw to monkey 2
+        //    If false: throw to monkey 0
+        lazy_static! {
+            static ref RE: regex::Regex =
+                regex::Regex::new(r"^.*If ([a-z]*): throw to monkey ([0-9]*)").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            assert_eq!(captures.len(), 3);
+            let cond_str = captures.get(1).unwrap().as_str();
+            let cond = match cond_str.parse::<bool>() {
+                Ok(cond) => cond,
+                Err(_) => return Err("Failed to parse bool condition".to_string()),
+            };
+            let monkey_str = captures.get(2).unwrap().as_str();
+            let monkey = match monkey_str.parse::<usize>() {
+                Ok(monkey) => monkey,
+                Err(_) => return Err("Failed to parse monkey number".to_string()),
+            };
+            Ok((cond, monkey))
+        } else {
+            Err(format!("Failed to match test action regexp for '{}'", s))
+        }
+    }
+}
+
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
         static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
@@ -147,6 +227,20 @@ Monkey 3:
             Operation::from_str("  Operation: new = old + 3"),
             Ok(Operation::Add(3))
         );
+    }
+
+    #[test]
+    fn test1_test_1() {
+        let s: &str = "Test: divisible by 19
+        If true: throw to monkey 2
+        If false: throw to monkey 0";
+        assert_eq!(Test::from_str(s), Ok(Test::new(19, 2, 0)));
+    }
+
+    #[test]
+    fn test1_test_2() {
+        let s: &str = "If true: throw to monkey 2";
+        assert_eq!(Test::action_from_str(s), Ok((true, 2)));
     }
 
     const EXAMPLE2: &str = "";
