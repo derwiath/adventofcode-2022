@@ -4,6 +4,50 @@ extern crate regex;
 
 use std::env;
 use std::fs;
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq)]
+enum Operation {
+    Add(usize), // new = old + x
+    Mul(usize), // new = old * x
+    Sqr,        // new = old * old
+}
+
+impl FromStr for Operation {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Operation, Self::Err> {
+        // Operation: new = old * 19
+        // Operation: new = old + 6
+        // Operation: new = old * old
+        lazy_static! {
+            static ref RE: regex::Regex =
+                regex::Regex::new(r"Operation: new = old ([+*]) ([\da-z]*)").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            assert_eq!(captures.len(), 3);
+            let operand = captures.get(1).unwrap().as_str();
+            let x = captures.get(2).unwrap().as_str();
+            if x == "old" {
+                assert_eq!(operand, "*");
+                Ok(Operation::Sqr)
+            } else {
+                match x.parse::<usize>() {
+                    Ok(x_number) => {
+                        if operand == "+" {
+                            Ok(Operation::Add(x_number))
+                        } else {
+                            assert_eq!(operand, "*");
+                            Ok(Operation::Mul(x_number))
+                        }
+                    }
+                    _ => Err("Failed to parse number".to_string()),
+                }
+            }
+        } else {
+            Err(format!("Failed to match operation regexp for '{}'", s))
+        }
+    }
+}
 
 fn solve_part1(input: &str) -> usize {
     lazy_static! {
@@ -79,6 +123,30 @@ Monkey 3:
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 10605);
+    }
+
+    #[test]
+    fn test1_op_1() {
+        assert_eq!(
+            Operation::from_str("  Operation: new = old * 19"),
+            Ok(Operation::Mul(19))
+        );
+    }
+
+    #[test]
+    fn test1_op_2() {
+        assert_eq!(
+            Operation::from_str("  Operation: new = old * old"),
+            Ok(Operation::Sqr)
+        );
+    }
+
+    #[test]
+    fn test1_op_3() {
+        assert_eq!(
+            Operation::from_str("  Operation: new = old + 3"),
+            Ok(Operation::Add(3))
+        );
     }
 
     const EXAMPLE2: &str = "";
