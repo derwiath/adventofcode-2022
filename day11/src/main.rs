@@ -69,6 +69,40 @@ impl FromStr for Operation {
 }
 
 #[derive(Debug, PartialEq)]
+struct Action {
+    condition: bool,
+    monkey: usize,
+}
+
+impl FromStr for Action {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Action, String> {
+        //    If true: throw to monkey 2
+        //    If false: throw to monkey 0
+        lazy_static! {
+            static ref RE: regex::Regex =
+                regex::Regex::new(r"^.*If ([a-z]*): throw to monkey ([0-9]*)").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            assert_eq!(captures.len(), 3);
+            let cond_str = captures.get(1).unwrap().as_str();
+            let condition = match cond_str.parse::<bool>() {
+                Ok(condition) => condition,
+                Err(_) => return Err("Failed to parse bool condition".to_string()),
+            };
+            let monkey_str = captures.get(2).unwrap().as_str();
+            let monkey = match monkey_str.parse::<usize>() {
+                Ok(monkey) => monkey,
+                Err(_) => return Err("Failed to parse monkey number".to_string()),
+            };
+            Ok(Action { condition, monkey })
+        } else {
+            Err(format!("Failed to match test action regexp for '{}'", s))
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 struct Test {
     denom: usize,
     throw_to_true: usize,
@@ -84,14 +118,14 @@ impl FromStr for Test {
         let line1: &str = lines.next().unwrap();
         let line2: &str = lines.next().unwrap();
         let denom = Test::denom_from_str(line0)?;
-        let throw1 = Test::action_from_str(line1)?;
-        let throw2 = Test::action_from_str(line2)?;
-        let throws = if throw1.0 == true {
-            (throw1.1, throw2.1)
+        let throw1 = Action::from_str(line1)?;
+        let throw2 = Action::from_str(line2)?;
+        let throws = if throw1.condition == true {
+            (throw1, throw2)
         } else {
-            (throw2.1, throw1.1)
+            (throw2, throw1)
         };
-        Ok(Test::new(denom, throws.0, throws.1))
+        Ok(Test::new(denom, throws.0.monkey, throws.1.monkey))
     }
 }
 
@@ -121,30 +155,11 @@ impl Test {
             Err(format!("Failed to match denom regexp for '{}'", s))
         }
     }
+}
 
-    fn action_from_str(s: &str) -> Result<(bool, usize), String> {
-        //    If true: throw to monkey 2
-        //    If false: throw to monkey 0
-        lazy_static! {
-            static ref RE: regex::Regex =
-                regex::Regex::new(r"^.*If ([a-z]*): throw to monkey ([0-9]*)").unwrap();
-        }
-        if let Some(captures) = RE.captures(s) {
-            assert_eq!(captures.len(), 3);
-            let cond_str = captures.get(1).unwrap().as_str();
-            let cond = match cond_str.parse::<bool>() {
-                Ok(cond) => cond,
-                Err(_) => return Err("Failed to parse bool condition".to_string()),
-            };
-            let monkey_str = captures.get(2).unwrap().as_str();
-            let monkey = match monkey_str.parse::<usize>() {
-                Ok(monkey) => monkey,
-                Err(_) => return Err("Failed to parse monkey number".to_string()),
-            };
-            Ok((cond, monkey))
-        } else {
-            Err(format!("Failed to match test action regexp for '{}'", s))
-        }
+impl Action {
+    fn new(condition: bool, monkey: usize) -> Action {
+        Action { condition, monkey }
     }
 }
 
@@ -257,17 +272,27 @@ Monkey 3:
     }
 
     #[test]
+    fn test1_action_1() {
+        assert_eq!(
+            Action::from_str("If true: throw to monkey 2"),
+            Ok(Action::new(true, 2))
+        );
+    }
+
+    #[test]
+    fn test1_action_2() {
+        assert_eq!(
+            Action::from_str("If false: throw to monkey 0"),
+            Ok(Action::new(false, 0))
+        );
+    }
+
+    #[test]
     fn test1_test_1() {
         let s: &str = "Test: divisible by 19
         If true: throw to monkey 2
         If false: throw to monkey 0";
         assert_eq!(Test::from_str(s), Ok(Test::new(19, 2, 0)));
-    }
-
-    #[test]
-    fn test1_test_2() {
-        let s: &str = "If true: throw to monkey 2";
-        assert_eq!(Test::action_from_str(s), Ok((true, 2)));
     }
 
     const EXAMPLE2: &str = "";
