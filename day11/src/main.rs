@@ -6,6 +6,25 @@ use std::env;
 use std::fs;
 use std::str::FromStr;
 
+fn starting_items_from_str(s: &str) -> Result<Vec<usize>, String> {
+    // Starting items: 79, 98
+    lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"Starting items: ([0-9, ]*)").unwrap();
+    }
+    if let Some(captures) = RE.captures(s) {
+        assert_eq!(captures.len(), 2);
+        let items_str = captures.get(1).unwrap().as_str();
+        let items: Vec<usize> = items_str
+            .split(',')
+            .map(|item_str| item_str.trim_start().trim_end())
+            .map(|item_str| item_str.parse::<usize>().unwrap())
+            .collect();
+        Ok(items)
+    } else {
+        Err(format!("Failed to match test action regexp for '{}'", s))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum Operation {
     Add(usize), // new = old + x
@@ -203,6 +222,14 @@ Monkey 3:
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 10605);
+    }
+
+    #[test]
+    fn test1_items_1() {
+        assert_eq!(
+            starting_items_from_str("Starting items: 79, 60, 97"),
+            Ok(vec![79, 60, 97])
+        );
     }
 
     #[test]
