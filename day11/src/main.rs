@@ -289,6 +289,12 @@ Monkey 3:
     }
 
     #[test]
+    fn test1_divisor_1() {
+        let s: &str = "Test: divisible by 19";
+        assert_eq!(divisor_from_str(s), Ok(19));
+    }
+
+    #[test]
     fn test1_test_1() {
         let s: &str = "Test: divisible by 19
         If true: throw to monkey 2
