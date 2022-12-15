@@ -7,6 +7,7 @@ extern crate regex;
 use std::env;
 use std::fs;
 use std::str::FromStr;
+use std::str::Lines;
 
 fn monkey_id_from_str(s: &str) -> Result<usize, String> {
     //Monkey 0:
@@ -140,39 +141,64 @@ fn divisor_from_str(s: &str) -> Result<usize, String> {
 }
 
 #[derive(Debug, PartialEq)]
-struct Test {
-    divisor: usize,
+struct Monkey {
+    id: usize,
+    items: Vec<usize>,
+    op: Operation,
+    test_divisor: usize,
     throw_to_true: usize,
     throw_to_false: usize,
 }
 
-impl FromStr for Test {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Test, Self::Err> {
-        assert_eq!(s.lines().count(), 3);
-        let mut lines = s.lines();
-        let line0: &str = lines.next().unwrap();
-        let line1: &str = lines.next().unwrap();
-        let line2: &str = lines.next().unwrap();
-        let divisor = divisor_from_str(line0)?;
-        let throw1 = Action::from_str(line1)?;
-        let throw2 = Action::from_str(line2)?;
+impl Monkey {
+    fn new(
+        id: usize,
+        items: Vec<usize>,
+        op: Operation,
+        test_divisor: usize,
+        throw_to_true: usize,
+        throw_to_false: usize,
+    ) -> Monkey {
+        Monkey {
+            id,
+            items,
+            op,
+            test_divisor,
+            throw_to_true,
+            throw_to_false,
+        }
+    }
+
+    fn from_lines(mut lines: Lines) -> Result<(Monkey, Lines), String> {
+        // Monkey 0:
+        //   Starting items: 79, 98
+        //   Operation: new = old * 19
+        //   Test: divisible by 23
+        //     If true: throw to monkey 2
+        //     If false: throw to monkey 3
+        assert!(lines.clone().count() >= 6);
+        let id = monkey_id_from_str(lines.next().unwrap())?;
+        let items = starting_items_from_str(lines.next().unwrap())?;
+        let op = Operation::from_str(lines.next().unwrap())?;
+        let test_divisor = divisor_from_str(lines.next().unwrap())?;
+        let throw1 = Action::from_str(lines.next().unwrap())?;
+        let throw2 = Action::from_str(lines.next().unwrap())?;
         let throws = if throw1.condition == true {
             (throw1, throw2)
         } else {
             (throw2, throw1)
         };
-        Ok(Test::new(divisor, throws.0.monkey, throws.1.monkey))
-    }
-}
-
-impl Test {
-    fn new(divisor: usize, throw_to_true: usize, throw_to_false: usize) -> Test {
-        Test {
-            divisor,
-            throw_to_true,
-            throw_to_false,
-        }
+        Ok((
+            Monkey::new(
+                id,
+                items,
+                op,
+                test_divisor,
+                throws.0.monkey,
+                throws.1.monkey,
+            ),
+            lines,
+        ))
     }
 }
 
@@ -318,11 +344,21 @@ Monkey 3:
     }
 
     #[test]
-    fn test1_test_1() {
-        let s: &str = "Test: divisible by 19
-        If true: throw to monkey 2
-        If false: throw to monkey 0";
-        assert_eq!(Test::from_str(s), Ok(Test::new(19, 2, 0)));
+    fn test1_monkey_1() {
+        let s: &str = "Monkey 1:
+                       Starting items: 54, 65, 75, 74
+                       Operation: new = old + 6
+                       Test: divisible by 19
+                         If true: throw to monkey 2
+                         If false: throw to monkey 0";
+        if let Ok((parsed_monkey, _)) = Monkey::from_lines(s.lines()) {
+            assert_eq!(
+                parsed_monkey,
+                Monkey::new(1, vec![54, 65, 75, 74], Operation::Add(6), 19, 2, 0),
+            );
+        } else {
+            assert!(false, "Failed to parse monkey from lines");
+        }
     }
 
     const EXAMPLE2: &str = "";
