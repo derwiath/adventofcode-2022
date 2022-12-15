@@ -103,10 +103,27 @@ impl FromStr for Action {
         }
     }
 }
+fn divisor_from_str(s: &str) -> Result<usize, String> {
+    //  Test: divisible by 19
+    lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"Test: divisible by (\d*)").unwrap();
+    }
+    if let Some(captures) = RE.captures(s) {
+        assert_eq!(captures.len(), 2);
+        let divisor = captures.get(1).unwrap().as_str();
+        if let Ok(divisor_number) = divisor.parse::<usize>() {
+            Ok(divisor_number)
+        } else {
+            Err("Failed to parse divisor number".to_string())
+        }
+    } else {
+        Err(format!("Failed to match divisor regexp for '{}'", s))
+    }
+}
 
 #[derive(Debug, PartialEq)]
 struct Test {
-    denom: usize,
+    divisor: usize,
     throw_to_true: usize,
     throw_to_false: usize,
 }
@@ -119,7 +136,7 @@ impl FromStr for Test {
         let line0: &str = lines.next().unwrap();
         let line1: &str = lines.next().unwrap();
         let line2: &str = lines.next().unwrap();
-        let denom = Test::denom_from_str(line0)?;
+        let divisor = divisor_from_str(line0)?;
         let throw1 = Action::from_str(line1)?;
         let throw2 = Action::from_str(line2)?;
         let throws = if throw1.condition == true {
@@ -127,34 +144,16 @@ impl FromStr for Test {
         } else {
             (throw2, throw1)
         };
-        Ok(Test::new(denom, throws.0.monkey, throws.1.monkey))
+        Ok(Test::new(divisor, throws.0.monkey, throws.1.monkey))
     }
 }
 
 impl Test {
-    fn new(denom: usize, throw_to_true: usize, throw_to_false: usize) -> Test {
+    fn new(divisor: usize, throw_to_true: usize, throw_to_false: usize) -> Test {
         Test {
-            denom,
+            divisor,
             throw_to_true,
             throw_to_false,
-        }
-    }
-
-    fn denom_from_str(s: &str) -> Result<usize, String> {
-        //  Test: divisible by 19
-        lazy_static! {
-            static ref RE: regex::Regex = regex::Regex::new(r"Test: divisible by (\d*)").unwrap();
-        }
-        if let Some(captures) = RE.captures(s) {
-            assert_eq!(captures.len(), 2);
-            let denom = captures.get(1).unwrap().as_str();
-            if let Ok(denom_number) = denom.parse::<usize>() {
-                Ok(denom_number)
-            } else {
-                Err("Failed to parse denom number".to_string())
-            }
-        } else {
-            Err(format!("Failed to match denom regexp for '{}'", s))
         }
     }
 }
