@@ -8,6 +8,24 @@ use std::env;
 use std::fs;
 use std::str::FromStr;
 
+fn monkey_id_from_str(s: &str) -> Result<usize, String> {
+    //Monkey 0:
+    lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"Monkey (\d*):").unwrap();
+    }
+    if let Some(captures) = RE.captures(s) {
+        assert_eq!(captures.len(), 2);
+        let monkey_id_str = captures.get(1).unwrap().as_str();
+        if let Ok(monkey_id) = monkey_id_str.parse::<usize>() {
+            Ok(monkey_id)
+        } else {
+            Err("Failed to parse monkey id".to_string())
+        }
+    } else {
+        Err(format!("Failed to match monkey id regexp for '{}'", s))
+    }
+}
+
 fn starting_items_from_str(s: &str) -> Result<Vec<usize>, String> {
     // Starting items: 79, 98
     lazy_static! {
@@ -238,6 +256,11 @@ Monkey 3:
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 10605);
+    }
+
+    #[test]
+    fn test1_monkey_id_1() {
+        assert_eq!(monkey_id_from_str("Monkey 17:"), Ok(17));
     }
 
     #[test]
