@@ -209,21 +209,31 @@ impl Monkey {
     }
 }
 
-fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+fn parse_monkeys(input: &str) -> Result<Vec<Monkey>, String> {
+    let mut monkeys = Vec::new();
+    let mut lines = input.lines();
+    while let Some(line) = lines.clone().next() {
+        if line.len() == 0 {
+            lines.next();
+            continue;
+        }
+
+        let monkey_pair = Monkey::from_lines(lines.clone())?;
+        lines = monkey_pair.1;
+        monkeys.push(monkey_pair.0);
     }
-    input
-        .lines()
-        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+    Ok(monkeys)
+}
+
+fn solve_part1(input: &str) -> usize {
+    let monkeys = match parse_monkeys(input) {
+        Ok(monkeys) => monkeys,
+        Err(e) => panic!("Error: {}", e),
+    };
+
+    monkeys.iter().for_each(|m| println!("{:?}", m));
+
+    0
 }
 
 fn solve_part2(input: &str) -> usize {
