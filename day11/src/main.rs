@@ -89,6 +89,24 @@ impl FromStr for Operation {
     }
 }
 
+fn divisor_from_str(s: &str) -> Result<usize, String> {
+    //  Test: divisible by 19
+    lazy_static! {
+        static ref RE: regex::Regex = regex::Regex::new(r"Test: divisible by (\d*)").unwrap();
+    }
+    if let Some(captures) = RE.captures(s) {
+        assert_eq!(captures.len(), 2);
+        let divisor = captures.get(1).unwrap().as_str();
+        if let Ok(divisor_number) = divisor.parse::<usize>() {
+            Ok(divisor_number)
+        } else {
+            Err("Failed to parse divisor number".to_string())
+        }
+    } else {
+        Err(format!("Failed to match divisor regexp for '{}'", s))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct Action {
     condition: bool,
@@ -122,21 +140,10 @@ impl FromStr for Action {
         }
     }
 }
-fn divisor_from_str(s: &str) -> Result<usize, String> {
-    //  Test: divisible by 19
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"Test: divisible by (\d*)").unwrap();
-    }
-    if let Some(captures) = RE.captures(s) {
-        assert_eq!(captures.len(), 2);
-        let divisor = captures.get(1).unwrap().as_str();
-        if let Ok(divisor_number) = divisor.parse::<usize>() {
-            Ok(divisor_number)
-        } else {
-            Err("Failed to parse divisor number".to_string())
-        }
-    } else {
-        Err(format!("Failed to match divisor regexp for '{}'", s))
+
+impl Action {
+    fn new(condition: bool, monkey: usize) -> Action {
+        Action { condition, monkey }
     }
 }
 
@@ -199,12 +206,6 @@ impl Monkey {
             ),
             lines,
         ))
-    }
-}
-
-impl Action {
-    fn new(condition: bool, monkey: usize) -> Action {
-        Action { condition, monkey }
     }
 }
 
