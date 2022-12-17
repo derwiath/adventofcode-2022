@@ -280,8 +280,54 @@ fn solve_part1(input: &str) -> usize {
     monkeys.pop().unwrap().inspect_count * monkeys.pop().unwrap().inspect_count
 }
 
+fn run_monkey_rounds(input: &str, round_count: usize) -> Vec<usize> {
+    let mut monkeys = match parse_monkeys(input) {
+        Ok(monkeys) => monkeys,
+        Err(e) => panic!("Error: {}", e),
+    };
+
+    let max_combined_divisor: usize = monkeys.iter().fold(1, |acc, m| acc * m.test_divisor);
+
+    for _round in 0..round_count {
+        for monkey_id in 0..monkeys.len() {
+            let throws: Vec<(usize, usize)> = {
+                let monkey = &monkeys[monkey_id];
+                monkey
+                    .items
+                    .iter()
+                    .map(|worry| {
+                        let new_worry = monkey.op.inspect(*worry) % max_combined_divisor;
+                        let next_monkey = if new_worry % monkey.test_divisor == 0 {
+                            monkey.throw_to_true
+                        } else {
+                            monkey.throw_to_false
+                        };
+                        (next_monkey, new_worry)
+                    })
+                    .collect()
+            };
+
+            {
+                let monkey = &mut monkeys[monkey_id];
+                monkey.inspect_count += monkey.items.len();
+                monkey.items.clear();
+            }
+            for (next_monkey, worry) in throws {
+                monkeys[next_monkey].items.push(worry);
+            }
+        }
+    }
+
+    monkeys.iter().map(|m| m.inspect_count).collect()
+}
+
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let mut inspect_counts = run_monkey_rounds(input, 10000);
+    inspect_counts.sort();
+    assert!(inspect_counts.len() >= 2);
+    let inspect_count1 = inspect_counts.pop().unwrap();
+    let inspect_count2 = inspect_counts.pop().unwrap();
+    inspect_count1 * inspect_count2
 }
 
 fn main() {
@@ -416,10 +462,18 @@ Monkey 3:
         }
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 2713310158);
+    }
+
+    #[test]
+    fn test2_rounds_01() {
+        assert_eq!(run_monkey_rounds(EXAMPLE1, 1), vec![2, 4, 3, 6]);
+    }
+
+    #[test]
+    fn test2_rounds_20() {
+        assert_eq!(run_monkey_rounds(EXAMPLE1, 20), vec![99, 97, 8, 103]);
     }
 }
