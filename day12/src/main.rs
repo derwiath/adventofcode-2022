@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
+use std::cmp::Ordering;
 use std::env;
 use std::fmt;
 use std::fs;
 use std::str::FromStr;
 
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
 struct Vector2 {
     x: usize,
     y: usize,
@@ -101,6 +103,38 @@ impl fmt::Display for Map {
         writeln!(f, "start: {}", self.start)?;
         writeln!(f, "end: {}", self.end)?;
         Ok(())
+    }
+}
+
+#[derive(Eq, PartialEq)]
+struct Node {
+    loc: Vector2,
+    dist_to_start: usize,
+    cost_to_end: usize,
+}
+
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other
+            .cost_to_end
+            .cmp(&self.cost_to_end)
+            .then_with(|| self.loc.cmp(&other.loc))
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Node {
+    fn new(loc: Vector2, dist_to_start: usize, cost_to_end: usize) -> Node {
+        Node {
+            loc,
+            dist_to_start,
+            cost_to_end,
+        }
     }
 }
 
