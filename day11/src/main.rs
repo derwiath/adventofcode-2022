@@ -53,6 +53,16 @@ enum Operation {
     Sqr,        // new = old * old
 }
 
+impl Operation {
+    fn inspect(&self, worry: usize) -> usize {
+        match self {
+            Operation::Add(x) => worry + x,
+            Operation::Mul(x) => worry * x,
+            Operation::Sqr => worry * worry,
+        }
+    }
+}
+
 impl FromStr for Operation {
     type Err = String;
     fn from_str(s: &str) -> Result<Operation, Self::Err> {
@@ -155,6 +165,7 @@ struct Monkey {
     test_divisor: usize,
     throw_to_true: usize,
     throw_to_false: usize,
+    inspect_count: usize,
 }
 
 impl Monkey {
@@ -173,6 +184,7 @@ impl Monkey {
             test_divisor,
             throw_to_true,
             throw_to_false,
+            inspect_count: 0,
         }
     }
 
@@ -226,14 +238,46 @@ fn parse_monkeys(input: &str) -> Result<Vec<Monkey>, String> {
 }
 
 fn solve_part1(input: &str) -> usize {
-    let monkeys = match parse_monkeys(input) {
+    let mut monkeys = match parse_monkeys(input) {
         Ok(monkeys) => monkeys,
         Err(e) => panic!("Error: {}", e),
     };
 
     monkeys.iter().for_each(|m| println!("{:?}", m));
 
-    0
+    for _round in 0..20 {
+        for monkey_id in 0..monkeys.len() {
+            let throws: Vec<(usize, usize)> = {
+                let monkey = &monkeys[monkey_id];
+                monkey
+                    .items
+                    .iter()
+                    .map(|worry| {
+                        let new_worry = monkey.op.inspect(*worry) / 3;
+                        let next_monkey = if new_worry % monkey.test_divisor == 0 {
+                            monkey.throw_to_true
+                        } else {
+                            monkey.throw_to_false
+                        };
+                        (next_monkey, new_worry)
+                    })
+                    .collect()
+            };
+
+            {
+                let monkey = &mut monkeys[monkey_id];
+                monkey.inspect_count += monkey.items.len();
+                monkey.items.clear();
+            }
+            for (next_monkey, worry) in throws {
+                monkeys[next_monkey].items.push(worry);
+            }
+        }
+    }
+
+    monkeys.sort_by_key(|m| m.inspect_count);
+    assert!(monkeys.len() >= 2);
+    monkeys.pop().unwrap().inspect_count * monkeys.pop().unwrap().inspect_count
 }
 
 fn solve_part2(input: &str) -> usize {
