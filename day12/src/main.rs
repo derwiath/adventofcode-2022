@@ -1,12 +1,15 @@
 #![allow(dead_code)]
 
 use std::cmp::Ordering;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::fs;
+use std::hash::Hash;
 use std::str::FromStr;
 
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Ord, PartialOrd)]
 struct Vector2 {
     x: isize,
     y: isize,
@@ -15,6 +18,12 @@ struct Vector2 {
 impl Vector2 {
     fn new(x: isize, y: isize) -> Vector2 {
         Vector2 { x, y }
+    }
+
+    fn cost_to(&self, other: &Vector2) -> f64 {
+        let x = self.x - other.x;
+        let y = self.y - other.y;
+        ((x * x + y * y) as f64).sqrt() as f64
     }
 }
 
@@ -39,6 +48,81 @@ impl Map {
             start,
             end,
         }
+    }
+
+    fn neighbours(&self, loc: &Vector2) -> [Option<Vector2>; 4] {
+        let height = self.height(loc);
+        let is_valid_neighbour = |n| self.is_valid_loc(n) && self.height(n) <= (height + 1);
+        let left = Vector2::new(loc.x - 1, loc.y);
+        let right = Vector2::new(loc.x + 1, loc.y);
+        let up = Vector2::new(loc.x, loc.y - 1);
+        let down = Vector2::new(loc.x, loc.y + 1);
+        [
+            if is_valid_neighbour(&left) {
+                Some(left)
+            } else {
+                None
+            },
+            if is_valid_neighbour(&right) {
+                Some(right)
+            } else {
+                None
+            },
+            if is_valid_neighbour(&up) {
+                Some(up)
+            } else {
+                None
+            },
+            if is_valid_neighbour(&down) {
+                Some(down)
+            } else {
+                None
+            },
+        ]
+    }
+
+    fn is_valid_loc(&self, loc: &Vector2) -> bool {
+        return 0 <= loc.x && loc.x < self.size.x && 0 <= loc.y && loc.y < self.size.y;
+    }
+
+    fn height(&self, loc: &Vector2) -> u8 {
+        let index = (loc.y * self.size.x + loc.x) as usize;
+        self.row_major[index]
+    }
+}
+
+struct DebugMap<'a> {
+    map: &'a Map,
+    loc: &'a Vector2,
+}
+
+impl<'a> DebugMap<'a> {
+    fn new(map: &'a Map, loc: &'a Vector2) -> DebugMap<'a> {
+        DebugMap { map, loc }
+    }
+}
+
+impl<'a> fmt::Debug for DebugMap<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let loc_index = self.loc.y * self.map.size.x + self.loc.x;
+        for y in 0..self.map.size.y {
+            let start_index = (y * self.map.size.x) as usize;
+            let end_index = ((y + 1) * self.map.size.x) as usize;
+            self.map.row_major[start_index..end_index]
+                .iter()
+                .enumerate()
+                .for_each(|(i, h)| {
+                    let index = (i + start_index) as isize;
+                    let c = if index == loc_index {
+                        '*'
+                    } else {
+                        (h + 'a' as u8) as char
+                    };
+                    write!(f, "{}", c).expect("Failed to write");
+                });
+            writeln!(f, "")?;
+        }
+        Ok(())
     }
 }
 
@@ -106,36 +190,120 @@ impl fmt::Display for Map {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Clone)]
 struct Node {
     loc: Vector2,
+    parent_loc: Vector2,
     dist_to_start: usize,
-    cost_to_end: usize,
+    cost_to_end: f64,
 }
 
-impl Ord for Node {
+impl Node {
+    fn new(loc: &Vector2, parent_loc: &Vector2, dist_to_start: usize, cost_to_end: f64) -> Node {
+        Node {
+            loc: loc.clone(),
+            parent_loc: parent_loc.clone(),
+            dist_to_start,
+            cost_to_end,
+        }
+    }
+
+    fn total_cost(&self) -> f64 {
+        self.dist_to_start as f64 + self.cost_to_end
+    }
+}
+
+struct OpenNode {
+    loc: Vector2,
+    total_cost: f64,
+}
+
+impl OpenNode {
+    fn new(loc: &Vector2, total_cost: f64) -> OpenNode {
+        OpenNode {
+            loc: loc.clone(),
+            total_cost,
+        }
+    }
+
+    fn from_node(node: &Node) -> OpenNode {
+        OpenNode {
+            loc: node.loc,
+            total_cost: node.total_cost(),
+        }
+    }
+
+    fn cmp_by_total_cost(&self, other: &OpenNode) -> Ordering {
+        let cost_diff = self.total_cost - other.total_cost;
+        if cost_diff < 0.0 {
+            Ordering::Less
+        } else if cost_diff > 0.0 {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    }
+}
+
+impl Ord for OpenNode {
     fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .cost_to_end
-            .cmp(&self.cost_to_end)
+        self.cmp_by_total_cost(other)
             .then_with(|| self.loc.cmp(&other.loc))
     }
 }
 
-impl PartialOrd for Node {
+impl PartialOrd for OpenNode {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Node {
-    fn new(loc: &Vector2, dist_to_start: usize, cost_to_end: usize) -> Node {
-        Node {
-            loc: loc.clone(),
-            dist_to_start,
-            cost_to_end,
+impl PartialEq for OpenNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp_by_total_cost(other) == Ordering::Equal && self.loc == other.loc
+    }
+}
+
+impl Eq for OpenNode {}
+
+fn shortest_path(map: &Map) -> Option<usize> {
+    let mut nodes: HashMap<Vector2, Node> = HashMap::new();
+    let mut open: BTreeSet<OpenNode> = BTreeSet::new();
+
+    {
+        let start_node = Node::new(&map.start, &map.start, 0, map.start.cost_to(&map.end));
+        open.insert(OpenNode::from_node(&start_node));
+        nodes.insert(map.start.clone(), start_node);
+    }
+
+    while let Some(open_node) = open.pop_first() {
+        let node = { (*nodes.get(&open_node.loc).unwrap()).clone() };
+        if open_node.loc == map.end {
+            return Some(node.dist_to_start);
+        }
+
+        let n_dist_to_start = node.dist_to_start + 1;
+        for n_loc in map.neighbours(&open_node.loc).iter().filter_map(|n| *n) {
+            let cost_to_end = n_loc.cost_to(&map.end);
+            let total_cost = n_dist_to_start as f64 + cost_to_end;
+            if let Some(n) = nodes.get(&n_loc) {
+                if total_cost >= n.total_cost() {
+                    continue;
+                }
+
+                let n_open = OpenNode::from_node(&n);
+                open.remove(&n_open);
+            } else {
+                let n_node = Node::new(&n_loc, &node.loc, n_dist_to_start, cost_to_end);
+                nodes.insert(n_loc.clone(), n_node);
+            }
+
+            let new_open_n = OpenNode::new(&n_loc, total_cost);
+            open.insert(new_open_n);
         }
     }
+
+    None
 }
 
 fn solve_part1(input: &str) -> usize {
@@ -143,7 +311,13 @@ fn solve_part1(input: &str) -> usize {
 
     println!("{}", map);
 
-    0
+    match shortest_path(&map) {
+        Some(n) => n,
+        None => {
+            println!("Failed to get shortest path");
+            0
+        }
+    }
 }
 
 fn solve_part2(input: &str) -> usize {
