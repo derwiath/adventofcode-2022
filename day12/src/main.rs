@@ -8,12 +8,12 @@ use std::str::FromStr;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
 struct Vector2 {
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
 }
 
 impl Vector2 {
-    fn new(x: usize, y: usize) -> Vector2 {
+    fn new(x: isize, y: isize) -> Vector2 {
         Vector2 { x, y }
     }
 }
@@ -60,11 +60,11 @@ impl FromStr for Map {
                         let height_char = match c {
                             'a'..='z' => c,
                             'S' => {
-                                start = Some(Vector2::new(x, y));
+                                start = Some(Vector2::new(x as isize, y as isize));
                                 'a'
                             }
                             'E' => {
-                                end = Some(Vector2::new(x, y));
+                                end = Some(Vector2::new(x as isize, y as isize));
                                 'z'
                             }
                             _ => panic!("unknown char {}", c),
@@ -78,7 +78,7 @@ impl FromStr for Map {
             .flatten()
             .collect();
         let height = row_major.len() / width;
-        let size = Vector2::new(width, height);
+        let size = Vector2::new(width as isize, height as isize);
         Ok(Map::new(
             row_major,
             size,
@@ -91,12 +91,12 @@ impl FromStr for Map {
 impl fmt::Display for Map {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for y in 0..self.size.y {
-            self.row_major[y * self.size.x..(y + 1) * self.size.x]
-                .iter()
-                .for_each(|h| {
-                    let c = (h + 'a' as u8) as char;
-                    write!(f, "{}", c).expect("Failed to write");
-                });
+            let start_index = (y * self.size.x) as usize;
+            let end_index = ((y + 1) * self.size.x) as usize;
+            self.row_major[start_index..end_index].iter().for_each(|h| {
+                let c = (h + 'a' as u8) as char;
+                write!(f, "{}", c).expect("Failed to write");
+            });
             writeln!(f, "")?;
         }
         writeln!(f, "size: {}", self.size)?;
@@ -129,9 +129,9 @@ impl PartialOrd for Node {
 }
 
 impl Node {
-    fn new(loc: Vector2, dist_to_start: usize, cost_to_end: usize) -> Node {
+    fn new(loc: &Vector2, dist_to_start: usize, cost_to_end: usize) -> Node {
         Node {
-            loc,
+            loc: loc.clone(),
             dist_to_start,
             cost_to_end,
         }
@@ -143,7 +143,7 @@ fn solve_part1(input: &str) -> usize {
 
     println!("{}", map);
 
-    map.size.x * map.size.y
+    0
 }
 
 fn solve_part2(input: &str) -> usize {
