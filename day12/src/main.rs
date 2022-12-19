@@ -321,7 +321,30 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let map = Map::from_str(input).unwrap();
+
+    map.row_major
+        .iter()
+        .enumerate()
+        .filter_map(|(i, h)| {
+            if h == &0 {
+                Some(Vector2::new(
+                    (i % map.size.x as usize) as isize,
+                    (i / map.size.x as usize) as isize,
+                ))
+            } else {
+                None
+            }
+        })
+        .filter_map(|start| {
+            let d: Option<usize> = shortest_path(&map, &start);
+            match d {
+                Some(d) => Some(d),
+                _ => None,
+            }
+        })
+        .min()
+        .unwrap()
 }
 
 fn main() {
@@ -356,10 +379,8 @@ abdefghi";
         assert_eq!(solve_part1(EXAMPLE1), 31);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 29);
     }
 }
