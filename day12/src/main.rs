@@ -266,14 +266,14 @@ impl PartialEq for OpenNode {
 
 impl Eq for OpenNode {}
 
-fn shortest_path(map: &Map) -> Option<usize> {
+fn shortest_path(map: &Map, start: &Vector2) -> Option<usize> {
     let mut nodes: HashMap<Vector2, Node> = HashMap::new();
     let mut open: BTreeSet<OpenNode> = BTreeSet::new();
 
     {
-        let start_node = Node::new(&map.start, &map.start, 0, map.start.cost_to(&map.end));
+        let start_node = Node::new(&start, &start, 0, start.cost_to(&map.end));
         open.insert(OpenNode::from_node(&start_node));
-        nodes.insert(map.start.clone(), start_node);
+        nodes.insert(start.clone(), start_node);
     }
 
     while let Some(open_node) = open.pop_first() {
@@ -311,7 +311,7 @@ fn solve_part1(input: &str) -> usize {
 
     println!("{}", map);
 
-    match shortest_path(&map) {
+    match shortest_path(&map, &map.start) {
         Some(n) => n,
         None => {
             println!("Failed to get shortest path");
