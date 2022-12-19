@@ -1,27 +1,72 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fs;
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq)]
+enum Value {
+    Int(usize),
+    List(Vec<Value>),
+}
+
+impl Value {
+    fn push(&mut self, v: Value) {
+        if let Value::List(values) = self {
+            values.push(v);
+        } else {
+            panic!("An Int cannot be parent");
+        }
+    }
+}
+
+impl FromStr for Value {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Value, ()> {
+        let mut values: Vec<Value> = Vec::<Value>::new();
+        let mut integer_str: String = String::new();
+
+        for c in s.chars() {
+            if c == '[' {
+                values.push(Value::List(Vec::<Value>::new()));
+            } else if c == ']' {
+                if !integer_str.is_empty() {
+                    let integer: usize = integer_str.parse::<usize>().unwrap();
+                    integer_str.clear();
+                    assert!(values.len() > 0);
+                    let value_count = values.len();
+                    values[value_count - 1].push(Value::Int(integer));
+                }
+                if values.len() > 1 {
+                    let value = values.pop().unwrap();
+                    let value_count = values.len();
+                    values[value_count - 1].push(value);
+                }
+            } else if c == ',' {
+                if !integer_str.is_empty() {
+                    let integer: usize = integer_str.parse::<usize>().unwrap();
+                    integer_str.clear();
+                    assert!(values.len() > 0);
+                    let value_count = values.len();
+                    values[value_count - 1].push(Value::Int(integer));
+                }
+            } else {
+                assert!(c.to_digit(10).is_some());
+                integer_str.push(c);
+            }
+        }
+
+        assert_eq!(values.len(), 1);
+        Ok(values.pop().unwrap())
+    }
+}
 
 fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
-    }
     input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+        .map(|l| Value::from_str(l))
+        .count()
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -77,6 +122,31 @@ mod tests_day13 {
     #[test]
     fn test1_1() {
         assert_eq!(solve_part1(EXAMPLE1), 13);
+    }
+
+    #[test]
+    fn test1_value_1() {
+        assert_eq!(
+            Value::from_str("[1,1,3,1,1]"),
+            Ok(Value::List(vec![
+                Value::Int(1),
+                Value::Int(1),
+                Value::Int(3),
+                Value::Int(1),
+                Value::Int(1)
+            ]))
+        );
+    }
+
+    #[test]
+    fn test1_value_2() {
+        assert_eq!(
+            Value::from_str("[[1],[2,3,4]]"),
+            Ok(Value::List(vec![
+                Value::List(vec![Value::Int(1),]),
+                Value::List(vec![Value::Int(2), Value::Int(3), Value::Int(4),]),
+            ]))
+        );
     }
 
     const EXAMPLE2: &str = "";
