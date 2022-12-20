@@ -95,7 +95,7 @@ impl FromStr for Value {
                     values[value_count - 1].push(Value::Int(integer));
                 }
             } else {
-                assert!(c.to_digit(10).is_some());
+                assert!(c.to_digit(10).is_some(), "Found invalid digit '{}'", c);
                 integer_str.push(c);
             }
         }
