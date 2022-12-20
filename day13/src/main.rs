@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::cmp::Ordering;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -108,6 +109,20 @@ impl Value {
     }
 }
 
+impl PartialOrd for Value {
+    fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
+        if let Some(in_order) = self.is_in_order(rhs, 0) {
+            if in_order {
+                Some(Ordering::Less)
+            } else {
+                Some(Ordering::Greater)
+            }
+        } else {
+            Some(Ordering::Equal)
+        }
+    }
+}
+
 impl FromStr for Value {
     type Err = ();
     fn from_str(s: &str) -> Result<Value, ()> {
@@ -192,7 +207,40 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let values = {
+        let mut values: Vec<Value> = input
+            .lines()
+            .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+            .map(|l| Value::from_str(l).unwrap())
+            .collect();
+        values.sort_by(|l, r| l.partial_cmp(r).unwrap());
+        values
+    };
+
+    let divs: Vec<Value> = [2, 6]
+        .iter()
+        .map(|i| Value::from_str(&format!("[[{}]]]", i)).unwrap())
+        .collect();
+
+    let div_indices: Vec<usize> = divs
+        .iter()
+        .map(|div| {
+            values
+                .iter()
+                .enumerate()
+                .find_map(|(i, v)| {
+                    if let Some(in_order) = v.is_in_order(&div, 0) {
+                        if !in_order {
+                            return Some(i);
+                        }
+                    }
+                    None
+                })
+                .unwrap_or(values.len())
+        })
+        .collect();
+
+    (div_indices[0] + 1) * (div_indices[1] + 2)
 }
 
 fn main() {
@@ -386,10 +434,8 @@ mod tests_day13 {
         );
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 140);
     }
 }
