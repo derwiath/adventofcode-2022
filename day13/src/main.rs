@@ -169,11 +169,26 @@ impl fmt::Display for Value {
 }
 
 fn solve_part1(input: &str) -> usize {
-    input
+    let values: Vec<Value> = input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| Value::from_str(l))
-        .count()
+        .map(|l| Value::from_str(l).unwrap())
+        .collect();
+    values
+        .iter()
+        .step_by(2)
+        .zip(values.iter().skip(1).step_by(2))
+        .enumerate()
+        .filter_map(|(i, (l, r))| {
+            println!("\n== Pair {} ==", i + 1);
+            if let Some(in_order) = l.is_in_order(r, 0) {
+                if in_order {
+                    return Some(i);
+                }
+            }
+            None
+        })
+        .fold(0, |acc, i| acc + (i + 1))
 }
 
 fn solve_part2(input: &str) -> usize {
