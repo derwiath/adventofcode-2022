@@ -196,10 +196,115 @@ mod tests_day13 {
     #[test]
     fn test1_cmp_1() {
         assert_eq!(
+            Value::from_str("[1]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[1]").unwrap(), 0),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn test1_cmp_2() {
+        assert_eq!(
+            Value::from_str("[[1]]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[2]").unwrap(), 0),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn test1_cmp_3() {
+        assert_eq!(
             Value::from_str("[1,2]")
                 .unwrap()
-                .is_in_order(&Value::from_str("[3, 4]").unwrap(), 0),
+                .is_in_order(&Value::from_str("[3,4]").unwrap(), 0),
             Some(true)
+        );
+    }
+
+    #[test]
+    fn test1_cmp_pair() {
+        assert_eq!(
+            Value::from_str("[[1],[2,3,4]]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[[1],[2,3,4]]").unwrap(), 0),
+            Some(true),
+        );
+    }
+
+    #[test]
+    fn test_cmp_pair_1() {
+        assert_eq!(
+            Value::from_str("[1,1,3,1,1]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[1,1,5,1,1]").unwrap(), 0),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn test_cmp_pair_2() {
+        assert_eq!(
+            Value::from_str("[[1],[2,3,4]]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[[1],4]").unwrap(), 0),
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn test_cmp_pair_3() {
+        assert_eq!(
+            Value::from_str("[9]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[[8,7,6]]").unwrap(), 0),
+            Some(false)
+        );
+    }
+    #[test]
+    fn test_cmp_pair_4() {
+        assert_eq!(
+            Value::from_str("[[4,4],4,4]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[[4,4],4,4,4]").unwrap(), 0),
+            Some(true)
+        );
+    }
+    #[test]
+    fn test_cmp_pair_5() {
+        assert_eq!(
+            Value::from_str("[7,7,7,7]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[7,7,7]").unwrap(), 0),
+            Some(false)
+        );
+    }
+    #[test]
+    fn test_cmp_pair_6() {
+        assert_eq!(
+            Value::from_str("[]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[3]").unwrap(), 0),
+            Some(true)
+        );
+    }
+    #[test]
+    fn test_cmp_pair_7() {
+        assert_eq!(
+            Value::from_str("[[[]]]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[[]]").unwrap(), 0),
+            Some(false)
+        );
+    }
+    #[test]
+    fn test_cmp_pair_8() {
+        assert_eq!(
+            Value::from_str("[1,[2,[3,[4,[5,6,7]]]],8,9]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[1,[2,[3,[4,[5,6,0]]]],8,9]").unwrap(), 0),
+            Some(false)
         );
     }
 
