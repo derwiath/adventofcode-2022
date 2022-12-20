@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::env;
+use std::fmt;
 use std::fs;
 use std::str::FromStr;
 
@@ -20,10 +21,29 @@ impl Value {
     }
 
     fn is_in_order(&self, right: &Value, depth: usize) -> Option<bool> {
+        println!(
+            "{:d$}- Compare {l} vs {r}",
+            "",
+            d = depth,
+            l = self,
+            r = right,
+        );
         let next_depth = depth + 1;
         match (self, right) {
             (Value::Int(l), Value::Int(r)) => {
                 if l != r {
+                    let (small, not) = if l < r {
+                        ("Left", "")
+                    } else {
+                        ("Right", " not")
+                    };
+                    println!(
+                        "{:d$}- {small} side is smaller, so inputs are{not} in the right order",
+                        "",
+                        d = next_depth,
+                        small = small,
+                        not = not,
+                    );
                     Some(l < r)
                 } else {
                     None
@@ -36,6 +56,18 @@ impl Value {
                     }
                 }
                 if l.len() != r.len() {
+                    let (small, not) = if l.len() < r.len() {
+                        ("Left", "")
+                    } else {
+                        ("Right", " not")
+                    };
+                    println!(
+                        "{:d$}- {small} side ran out of items, so inputs are{not} in the right order",
+                        "",
+                        d = next_depth,
+                        small = small,
+                        not = not,
+                    );
                     Some(l.len() < r.len())
                 } else if depth > 0 {
                     None
@@ -43,10 +75,22 @@ impl Value {
                     Some(true)
                 }
             }
-            (Value::Int(_l), Value::List(_r)) => {
+            (Value::Int(l), Value::List(_r)) => {
+                println!(
+                    "{:d$}- Mixed types; convert left to [{int}] and retry comparison",
+                    "",
+                    d = next_depth,
+                    int = l,
+                );
                 self.clone_as_list().is_in_order(right, next_depth)
             }
-            (Value::List(_l), Value::Int(_r)) => {
+            (Value::List(_l), Value::Int(r)) => {
+                println!(
+                    "{:d$}- Mixed types; convert right to [{int}] and retry comparison",
+                    "",
+                    d = next_depth,
+                    int = r,
+                );
                 self.is_in_order(&right.clone_as_list(), next_depth)
             }
         }
@@ -102,6 +146,25 @@ impl FromStr for Value {
 
         assert_eq!(values.len(), 1);
         Ok(values.pop().unwrap())
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Int(i) => write!(f, "{}", i)?,
+            Value::List(l) => {
+                write!(f, "[")?;
+                for (i, v) in l.iter().enumerate() {
+                    v.fmt(f)?;
+                    if i + 1 < l.len() {
+                        write!(f, ",")?;
+                    }
+                }
+                write!(f, "]")?
+            }
+        }
+        Ok(())
     }
 }
 
