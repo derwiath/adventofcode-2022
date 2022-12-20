@@ -4,7 +4,7 @@ use std::env;
 use std::fs;
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum Value {
     Int(usize),
     List(Vec<Value>),
@@ -16,6 +16,50 @@ impl Value {
             values.push(v);
         } else {
             panic!("An Int cannot be parent");
+        }
+    }
+
+    fn is_in_order(&self, right: &Value, depth: usize) -> Option<bool> {
+        let next_depth = depth + 1;
+        match (self, right) {
+            (Value::Int(l), Value::Int(r)) => {
+                if l != r {
+                    Some(l < r)
+                } else {
+                    None
+                }
+            }
+            (Value::List(l), Value::List(r)) => {
+                for i in 0..l.len().min(r.len()) {
+                    if let Some(in_order) = l[i].is_in_order(&r[i], next_depth) {
+                        return Some(in_order);
+                    }
+                }
+                if l.len() != r.len() {
+                    Some(l.len() < r.len())
+                } else if depth > 0 {
+                    None
+                } else {
+                    Some(true)
+                }
+            }
+            (Value::Int(_l), Value::List(_r)) => {
+                self.clone_as_list().is_in_order(right, next_depth)
+            }
+            (Value::List(_l), Value::Int(_r)) => {
+                self.is_in_order(&right.clone_as_list(), next_depth)
+            }
+        }
+    }
+
+    fn clone_as_list(&self) -> Value {
+        match self {
+            Value::Int(_) => {
+                let mut l = Vec::with_capacity(1);
+                l.push(self.clone());
+                Value::List(l)
+            }
+            Value::List(_) => self.clone(),
         }
     }
 }
@@ -146,6 +190,16 @@ mod tests_day13 {
                 Value::List(vec![Value::Int(1),]),
                 Value::List(vec![Value::Int(2), Value::Int(3), Value::Int(4),]),
             ]))
+        );
+    }
+
+    #[test]
+    fn test1_cmp_1() {
+        assert_eq!(
+            Value::from_str("[1,2]")
+                .unwrap()
+                .is_in_order(&Value::from_str("[3, 4]").unwrap(), 0),
+            Some(true)
         );
     }
 
