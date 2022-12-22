@@ -50,12 +50,13 @@ mod tests_day14 {
     use super::*;
 
     const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+498,4 -> 498,6 -> 496,6
+503,4 -> 502,4 -> 502,9 -> 494,9
+";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 24);
     }
 
     const EXAMPLE2: &str = "";
