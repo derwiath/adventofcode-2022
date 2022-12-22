@@ -1,9 +1,5 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-
 use std::env;
 use std::fmt;
 use std::fs;
@@ -53,21 +49,54 @@ impl fmt::Debug for Vector2 {
     }
 }
 
-fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
+#[derive(PartialEq)]
+enum Line {
+    Horz(Vector2, Vector2),
+    Vert(Vector2, Vector2),
+}
+
+impl Line {
+    fn new(p1: &Vector2, p2: &Vector2) -> Line {
+        if p1.x == p2.x {
+            Line::Vert(*p1, *p2)
+        } else {
+            Line::Horz(*p1, *p2)
+        }
     }
-    input
+}
+
+impl fmt::Debug for Line {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Line::Horz(p1, p2) => write!(f, "H {:?}, {:?}", p1, p2),
+            Line::Vert(p1, p2) => write!(f, "V {:?}, {:?}", p1, p2),
+        }
+    }
+}
+
+fn parse_lines(s: &str) -> Result<Vec<Line>, &'static str> {
+    let mut prev_point: Option<Vector2> = None;
+    let mut lines: Vec<Line> = Vec::new();
+    for p_str in s.split(" -> ") {
+        let p = Vector2::from_str(p_str)?;
+        if let Some(p1) = &prev_point {
+            lines.push(Line::new(p1, &p))
+        }
+        prev_point = Some(p);
+    }
+    Ok(lines)
+}
+
+fn solve_part1(input: &str) -> usize {
+    let lines: Vec<Line> = input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
-        .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
-        })
-        .fold(0, |acc, (count, _)| acc + count)
+        .map(|l| parse_lines(l))
+        .map(|l| l.unwrap())
+        .flatten()
+        .collect();
+
+    lines.len()
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -108,6 +137,17 @@ mod tests_day14 {
     #[test]
     fn test1_vector2_from_str_1() {
         assert_eq!(Vector2::from_str("498,4"), Ok(Vector2::new(498, 4)));
+    }
+
+    #[test]
+    fn test1_parse_lines_1() {
+        assert_eq!(
+            parse_lines("498,4 -> 498,6 -> 496,6"),
+            Ok(vec![
+                Line::Vert(Vector2::new(498, 4), Vector2::new(498, 6)),
+                Line::Horz(Vector2::new(498, 6), Vector2::new(496, 6))
+            ])
+        );
     }
 
     const EXAMPLE2: &str = "";
