@@ -152,7 +152,52 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let lines: Vec<Line> = input
+        .lines()
+        .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
+        .map(|l| parse_lines(l))
+        .map(|l| l.unwrap())
+        .flatten()
+        .collect();
+
+    let max_y = lines
+        .iter()
+        .map(|l| match l {
+            Line::Horz(p1, p2) => p1.y.max(p2.y),
+            Line::Vert(p1, p2) => p1.y.max(p2.y),
+        })
+        .max()
+        .unwrap();
+
+    let floor = max_y + 2;
+
+    const SOURCE: Vector2 = Vector2::new(500, 0);
+    const MOVES: [Vector2; 3] = [Vector2::new(0, 1), Vector2::new(-1, 1), Vector2::new(1, 1)];
+    let mut sands: HashSet<Vector2> = HashSet::new();
+    let mut sand = SOURCE.clone();
+    loop {
+        if let Some(next_sand) = MOVES.iter().find_map(|m| {
+            let candidate = sand.add(m);
+            if !sands.contains(&candidate)
+                && !find_line_at(&lines[..], &candidate)
+                && candidate.y < floor
+            {
+                Some(candidate)
+            } else {
+                None
+            }
+        }) {
+            sand = next_sand
+        } else {
+            if sands.insert(sand) {
+                sand = SOURCE;
+            } else {
+                break;
+            }
+        }
+    }
+
+    sands.len()
 }
 
 fn main() {
@@ -220,10 +265,8 @@ mod tests_day14 {
         assert_eq!(find_line_at(&horz_line, &Vector2::new(497, 5)), false);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 93);
     }
 }
