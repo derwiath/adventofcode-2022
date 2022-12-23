@@ -1,19 +1,24 @@
 #![allow(dead_code)]
 
+use std::collections::HashSet;
 use std::env;
 use std::fmt;
 use std::fs;
 use std::str::FromStr;
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 struct Vector2 {
     x: isize,
     y: isize,
 }
 
 impl Vector2 {
-    fn new(x: isize, y: isize) -> Vector2 {
+    const fn new(x: isize, y: isize) -> Vector2 {
         Vector2 { x, y }
+    }
+
+    fn add(&self, rhs: &Vector2) -> Vector2 {
+        Vector2::new(self.x + rhs.x, self.y + rhs.y)
     }
 }
 
@@ -58,9 +63,17 @@ enum Line {
 impl Line {
     fn new(p1: &Vector2, p2: &Vector2) -> Line {
         if p1.x == p2.x {
-            Line::Vert(*p1, *p2)
+            if p1.y < p2.y {
+                Line::Vert(*p1, *p2)
+            } else {
+                Line::Vert(*p2, *p1)
+            }
         } else {
-            Line::Horz(*p1, *p2)
+            if p1.x < p2.x {
+                Line::Horz(*p1, *p2)
+            } else {
+                Line::Horz(*p2, *p1)
+            }
         }
     }
 }
@@ -87,6 +100,16 @@ fn parse_lines(s: &str) -> Result<Vec<Line>, &'static str> {
     Ok(lines)
 }
 
+fn find_line_at(lines: &[Line], p: &Vector2) -> bool {
+    lines
+        .iter()
+        .find(|l| match l {
+            Line::Horz(p1, p2) => p.y == p1.y && p1.x <= p.x && p.x <= p2.x,
+            Line::Vert(p1, p2) => p.x == p1.x && p1.y <= p.y && p.y <= p2.y,
+        })
+        .is_some()
+}
+
 fn solve_part1(input: &str) -> usize {
     let lines: Vec<Line> = input
         .lines()
@@ -96,7 +119,36 @@ fn solve_part1(input: &str) -> usize {
         .flatten()
         .collect();
 
-    lines.len()
+    let max_y = lines
+        .iter()
+        .map(|l| match l {
+            Line::Horz(p1, p2) => p1.y.max(p2.y),
+            Line::Vert(p1, p2) => p1.y.max(p2.y),
+        })
+        .max()
+        .unwrap();
+
+    const SOURCE: Vector2 = Vector2::new(500, 0);
+    const MOVES: [Vector2; 3] = [Vector2::new(0, 1), Vector2::new(-1, 1), Vector2::new(1, 1)];
+    let mut sands: HashSet<Vector2> = HashSet::new();
+    let mut sand = SOURCE.clone();
+    while sand.y <= max_y {
+        if let Some(next_sand) = MOVES.iter().find_map(|m| {
+            let candidate = sand.add(m);
+            if !sands.contains(&candidate) && !find_line_at(&lines[..], &candidate) {
+                Some(candidate)
+            } else {
+                None
+            }
+        }) {
+            sand = next_sand
+        } else {
+            sands.insert(sand);
+            sand = SOURCE;
+        }
+    }
+
+    sands.len()
 }
 
 fn solve_part2(input: &str) -> usize {
@@ -148,6 +200,24 @@ mod tests_day14 {
                 Line::Horz(Vector2::new(498, 6), Vector2::new(496, 6))
             ])
         );
+    }
+
+    #[test]
+    fn test1_find_line_at_1() {
+        let vert_line: [Line; 1] = [Line::new(&Vector2::new(498, 4), &Vector2::new(498, 6))];
+        assert_eq!(find_line_at(&vert_line, &Vector2::new(498, 4)), true);
+        assert_eq!(find_line_at(&vert_line, &Vector2::new(498, 5)), true);
+        assert_eq!(find_line_at(&vert_line, &Vector2::new(498, 6)), true);
+        assert_eq!(find_line_at(&vert_line, &Vector2::new(497, 5)), false);
+    }
+
+    #[test]
+    fn test1_find_line_at_2() {
+        let horz_line: [Line; 1] = [Line::new(&Vector2::new(498, 6), &Vector2::new(496, 6))];
+        assert_eq!(find_line_at(&horz_line, &Vector2::new(498, 6)), true);
+        assert_eq!(find_line_at(&horz_line, &Vector2::new(497, 6)), true);
+        assert_eq!(find_line_at(&horz_line, &Vector2::new(496, 6)), true);
+        assert_eq!(find_line_at(&horz_line, &Vector2::new(497, 5)), false);
     }
 
     const EXAMPLE2: &str = "";
