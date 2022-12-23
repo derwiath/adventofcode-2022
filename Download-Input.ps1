@@ -25,6 +25,7 @@ $OutputDir="day$Day"
 $OutputPath="$OutputDir/$Filename"
 $UserAgent="Download-Input.ps1 by github.com/derwiath via cURL"
 $URL="https://adventofcode.com/2022/day/$Day/input"
+$CommitMsg ="$Day`: Add Input"
 
 If (-Not (Test-Path -Path "$CookieFilename" -PathType Leaf)) {
 	Write-Error "Failed to find $CookieFilename"
@@ -41,5 +42,11 @@ ElseIf ((-Not $Force) -And (Test-Path -Path "$OutputPath" -PathType Leaf)) {
 
 Write-Host "curl --cookie $CookieFilename -A `"$UserAgent`" $URL"
 curl --cookie $CookieFilename -A `"$UserAgent`" $URL | Set-Content $OutputPath
+if (-Not ($LASTEXITCODE -Eq 0)) {
+	Write-Error "Error: curl returned exit code $LASTEXITCODE"
+}
+
+git add $OutputPath
+git commit -m $CommitMsg
 
 Exit $LASTEXITCODE
