@@ -4,6 +4,7 @@
 extern crate lazy_static;
 extern crate regex;
 
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 
@@ -40,20 +41,15 @@ impl<'a> Valve<'a> {
 }
 
 fn solve_part1(input: &str) -> usize {
-    lazy_static! {
-        static ref RE: regex::Regex = regex::Regex::new(r"(\d*) ([a-z]*)").unwrap();
-    }
-    input
+    let valves: HashMap<&str, Valve> = input
         .lines()
         .filter_map(|l| if l.len() > 0 { Some(l) } else { None })
         .map(|l| {
-            let captures = RE.captures(l).unwrap();
-            assert_eq!(captures.len(), 3);
-            let count: usize = captures.get(1).unwrap().as_str().parse::<usize>().unwrap();
-            let thing = captures.get(2).unwrap().as_str();
-            (count, thing)
+            let valve = Valve::from_str(l);
+            (valve.name, valve)
         })
-        .fold(0, |acc, (count, _)| acc + count)
+        .collect();
+    valves.len()
 }
 
 fn solve_part2(input: &str) -> usize {
