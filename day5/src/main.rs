@@ -327,10 +327,8 @@ move 1 from 1 to 2
         );
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), "MCD");
     }
 }
