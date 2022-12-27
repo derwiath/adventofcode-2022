@@ -90,6 +90,7 @@ impl fmt::Debug for Range {
     }
 }
 
+#[derive(Clone)]
 struct SensorWithBeacon {
     sensor: Vector2,
     beacon: Vector2,
@@ -177,13 +178,83 @@ fn count_known_locations(sensor_beacons: &[SensorWithBeacon], row: isize) -> usi
     count as usize
 }
 
+fn find_unknown_x_on_row(
+    sensor_beacons: &[SensorWithBeacon],
+    row: isize,
+    max_x: isize,
+) -> Option<isize> {
+    let row_range = Range::new(0, max_x);
+    let ranges: Vec<Range> = {
+        let mut ranges: Vec<Range> = sensor_beacons
+            .iter()
+            .filter_map(|s| {
+                if let Some(r) = s.range_on_row(row) {
+                    Some(r)
+                } else {
+                    None
+                }
+            })
+            .filter_map(|r| r.intersection(&row_range))
+            .collect();
+        ranges.sort_unstable();
+        ranges
+    };
+    if ranges.len() == 0 {
+        return Some(0);
+    }
+
+    let first = &ranges.first().unwrap();
+    if first.min > 0 {
+        return Some(ranges[0].min);
+    }
+
+    let mut r_max_x = first.max;
+    for r in &ranges {
+        if (r_max_x + 1) < r.min {
+            return Some(r_max_x + 1);
+        }
+        r_max_x = r_max_x.max(r.max);
+    }
+
+    if r_max_x < max_x {
+        return Some(r_max_x + 1);
+    }
+
+    return None;
+}
+
+fn find_unknown_pos(sensor_beacons: &[SensorWithBeacon], max_xy: isize) -> Option<Vector2> {
+    let sensors_in_range: Vec<SensorWithBeacon> = sensor_beacons
+        .iter()
+        .filter(|s| {
+            let d = s.manhattan_distance();
+            !(s.sensor.x + d < 0
+                || max_xy < s.sensor.x - d
+                || s.sensor.y + d < 0
+                || max_xy < s.sensor.y - d)
+        })
+        .map(|s| s.clone())
+        .collect();
+
+    for y in 0..max_xy + 1 {
+        if let Some(x) = find_unknown_x_on_row(&sensors_in_range[..], y, max_xy) {
+            return Some(Vector2::new(x, y));
+        }
+    }
+    None
+}
+
 fn solve_part1(input: &str) -> usize {
     let sensors_beacons = parse_sensors(input);
     count_known_locations(&sensors_beacons[..], 2000000)
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let sensors_beacons = parse_sensors(input);
+    if let Some(pos) = find_unknown_pos(&sensors_beacons[..], 4000000) {
+        return (pos.x * 4000000 + pos.y) as usize;
+    }
+    0
 }
 
 fn main() {
@@ -261,11 +332,13 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3
         assert_eq!(s.range_on_row(10), None);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        let sensors_beacons = parse_sensors(EXAMPLE1);
+        assert_eq!(
+            find_unknown_pos(&sensors_beacons[..], 20),
+            Some(Vector2::new(14, 11))
+        );
     }
 
     #[test]
