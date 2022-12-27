@@ -52,6 +52,19 @@ impl Range {
             max: center + dist,
         }
     }
+
+    // min1--min2 max1
+    fn intersection(&self, other: &Range) -> Option<Range> {
+        let i = Range {
+            min: self.min.max(other.min),
+            max: self.max.min(other.max),
+        };
+        if i.min <= i.max {
+            Some(i)
+        } else {
+            None
+        }
+    }
 }
 
 impl PartialOrd for Range {
@@ -253,5 +266,26 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3
     #[test]
     fn test2_1() {
         assert_eq!(solve_part2(EXAMPLE2), 0);
+    }
+
+    #[test]
+    fn test2_range_intersection_1() {
+        assert_eq!(
+            Range::new(0, 2).intersection(&Range::new(1, 3)),
+            Some(Range::new(1, 2))
+        );
+    }
+
+    #[test]
+    fn test2_range_intersection_2() {
+        assert_eq!(
+            Range::new(0, 2).intersection(&Range::new(2, 3)),
+            Some(Range::new(2, 2))
+        );
+    }
+
+    #[test]
+    fn test2_range_intersection_3() {
+        assert_eq!(Range::new(0, 2).intersection(&Range::new(3, 3)), None);
     }
 }
