@@ -3,8 +3,30 @@
 use std::env;
 use std::fs;
 
+enum Push {
+    Left,
+    Right,
+}
+
+impl Push {
+    fn from_str(s: &str) -> Vec<Push> {
+        s.chars()
+            .map(|c| {
+                if c == '<' {
+                    Push::Left
+                } else if c == '>' {
+                    Push::Right
+                } else {
+                    panic!("Unknown push {}", c);
+                }
+            })
+            .collect()
+    }
+}
+
 fn solve_part1(input: &str) -> usize {
-    0
+    let pushes = Push::from_str(input);
+    pushes.len()
 }
 
 fn solve_part2(input: &str) -> usize {
