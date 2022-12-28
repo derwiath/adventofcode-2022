@@ -49,13 +49,11 @@ fn main() {
 mod tests_day17 {
     use super::*;
 
-    const EXAMPLE1: &str = "
-3 seals
-4 quacks";
+    const EXAMPLE1: &str = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>";
 
     #[test]
     fn test1_1() {
-        assert_eq!(solve_part1(EXAMPLE1), 7);
+        assert_eq!(solve_part1(EXAMPLE1), 3068);
     }
 
     const EXAMPLE2: &str = "";
