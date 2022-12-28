@@ -24,6 +24,27 @@ impl Push {
     }
 }
 
+enum RockKind {
+    // ####
+    HorzLine = 0b1111,
+    // #
+    // #
+    // #
+    // #
+    VertLine = 0b1000 | 0b1000 << 4 | 0b1000 << 8 | 0b1000 << 12,
+    //  #
+    // ###
+    //  #
+    Plus = 0b0100 | 0b1110 << 4 | 0b0100 << 8,
+    //   #
+    //   #
+    // ###
+    RevL = 0b1110 | 0b0010 << 4 | 0b0010 << 8,
+    // ##
+    // ##
+    Square = 0b1100 | 0b1100 << 4,
+}
+
 struct Rock {
     x: u8,
     y: usize,
@@ -33,6 +54,10 @@ struct Rock {
 impl Rock {
     fn new(x: u8, y: usize, rows: u16) -> Rock {
         Rock { x, y, rows }
+    }
+
+    fn from_kind(x: u8, y: usize, kind: RockKind) -> Rock {
+        Rock::new(x, y, kind as u16)
     }
 
     fn row(&self, i: usize) -> u8 {
@@ -56,6 +81,15 @@ impl Rock {
         } else {
             None
         }
+    }
+
+    fn row_count(&self) -> usize {
+        for i in 0..4 {
+            if (0xf000 >> (4 * i)) & self.rows != 0 {
+                return 4 - i;
+            }
+        }
+        0
     }
 }
 
@@ -121,6 +155,15 @@ mod tests_day17 {
         assert_eq!(Rock::new(5, 0, 0b0001).shifted_row(0), None);
         assert_eq!(Rock::new(6, 0, 0b0010).shifted_row(0), None);
         assert_eq!(Rock::new(7, 0, 0b0100).shifted_row(0), None);
+    }
+
+    #[test]
+    fn test1_rock_row_count_1() {
+        assert_eq!(Rock::new(0, 0, 0).row_count(), 0);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::HorzLine).row_count(), 1);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::VertLine).row_count(), 4);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Plus).row_count(), 3);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Square).row_count(), 2);
     }
 
     const EXAMPLE2: &str = "";
