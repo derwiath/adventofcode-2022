@@ -93,6 +93,20 @@ impl Rock {
     }
 }
 
+struct Tower {
+    rows: Vec<u8>,
+}
+
+impl Tower {
+    fn new() -> Tower {
+        Tower { rows: vec![0xff] }
+    }
+
+    fn row_count(&self) -> usize {
+        self.rows.len()
+    }
+}
+
 fn solve_part1(input: &str) -> usize {
     let pushes = Push::from_str(input);
     pushes.len()
@@ -136,6 +150,14 @@ mod tests_day17 {
         assert_eq!(Rock::new(0, 0, 0b1111).row(1), 0b0000);
         assert_eq!(Rock::new(0, 0, 0b1111).row(2), 0b0000);
         assert_eq!(Rock::new(0, 0, 0b1111).row(3), 0b0000);
+    }
+
+    #[test]
+    fn test1_rock_row_2() {
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Plus).row(0), 0b0100);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Plus).row(1), 0b1110);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Plus).row(2), 0b0100);
+        assert_eq!(Rock::from_kind(0, 0, RockKind::Plus).row(3), 0b0000);
     }
 
     #[test]
