@@ -10,7 +10,8 @@ enum Push {
 
 impl Push {
     fn from_str(s: &str) -> Vec<Push> {
-        s.chars()
+        s.trim_end()
+            .chars()
             .map(|c| {
                 if c == '<' {
                     Push::Left
