@@ -194,7 +194,7 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
     let mut tower = Tower::new();
     let mut push_it = pushes.iter().cycle();
     let mut rock_kind_it = ROCK_KINDS.iter().cycle();
-    for _ in 0..rock_count {
+    for r in 0..rock_count {
         let rock_kind = rock_kind_it.next().unwrap();
         let mut rock = Rock::from_kind(2, tower.row_count() + 3, *rock_kind);
 
@@ -211,6 +211,15 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
                 break;
             }
         }
+
+        if r % 1000000 == 0 {
+            println!(
+                "{} ({:.2}%): height {}",
+                r,
+                (r as f64 / rock_count as f64) * 100.0,
+                tower.row_count()
+            );
+        }
     }
 
     tower.row_count() - 1
@@ -223,7 +232,9 @@ fn solve_part1(input: &str) -> usize {
 }
 
 fn solve_part2(input: &str) -> usize {
-    input.len()
+    let pushes = Push::from_str(input);
+
+    get_tower_height(&pushes[..], 1000000000000)
 }
 
 fn main() {
@@ -317,10 +328,8 @@ mod tests_day17 {
         assert_eq!(rock.overlaps_tower(&tower), true);
     }
 
-    const EXAMPLE2: &str = "";
-
     #[test]
     fn test2_1() {
-        assert_eq!(solve_part2(EXAMPLE2), 0);
+        assert_eq!(solve_part2(EXAMPLE1), 1514285714288);
     }
 }
