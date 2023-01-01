@@ -152,15 +152,30 @@ impl Rock {
 
 struct Tower {
     rows: Vec<u8>,
+    row_count_offset: usize,
 }
 
 impl Tower {
     fn new() -> Tower {
-        Tower { rows: vec![0xff] }
+        Tower {
+            rows: vec![0xff],
+            row_count_offset: 0,
+        }
+    }
+
+    fn clone_top(&self, rock_count: usize) -> Tower {
+        assert!(rock_count <= self.rows.len());
+        let row_count_offset = self.rows.len() - rock_count;
+        let mut top_rows = Vec::new();
+        top_rows.extend_from_slice(&self.rows[row_count_offset..]);
+        Tower {
+            rows: top_rows,
+            row_count_offset: row_count_offset + self.row_count_offset,
+        }
     }
 
     fn row_count(&self) -> usize {
-        self.rows.len()
+        self.rows.len() + self.row_count_offset
     }
 
     fn height(&self) -> usize {
@@ -168,15 +183,18 @@ impl Tower {
     }
 
     fn row(&self, y: usize) -> u8 {
-        self.rows[y]
+        assert!(y >= self.row_count_offset);
+        assert!(y <= self.rows.len() + self.row_count_offset);
+        self.rows[y - self.row_count_offset]
     }
 
     fn add_rock(&mut self, rock: &Rock) {
         assert!(rock.y > 0);
-        assert!(rock.y <= self.rows.len() + 1);
+        assert!(rock.y >= self.row_count_offset);
+        assert!((rock.y - self.row_count_offset) <= self.rows.len() + 1);
         for r in 0..rock.row_count() {
             let rock_row = rock.shifted_row(r).unwrap();
-            let y = r + rock.y;
+            let y = (r + rock.y) - self.row_count_offset;
             if y < self.rows.len() {
                 self.rows[y] |= rock_row;
             } else {
@@ -310,7 +328,7 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
     let mut height_records: HashMap<HeightRecordKey, RocksHeightRecord> = HashMap::new();
     for r in 0..rock_count {
         let rock_index = r % ROCK_KINDS.len();
-        let rock_kind = &ROCK_KINDS[r % ROCK_KINDS.len()];
+        let rock_kind = &ROCK_KINDS[rock_index];
         let (rock, new_push_index) = drop_rock(rock_kind, &mut tower, pushes, push_index);
         push_index = new_push_index;
 
