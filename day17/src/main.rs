@@ -276,31 +276,44 @@ impl fmt::Debug for RocksHeightRecord {
     }
 }
 
+fn drop_rock(
+    rock_kind: &RockKind,
+    tower: &mut Tower,
+    pushes: &[Push],
+    start_push_index: usize,
+) -> (Rock, usize) {
+    let mut rock = Rock::from_kind(2, tower.row_count() + 3, *rock_kind);
+
+    let mut push_index = start_push_index;
+    loop {
+        let push = &pushes[push_index];
+        push_index = (push_index + 1) % pushes.len();
+        rock.apply_push(push);
+        if rock.overlaps_tower(&tower) {
+            rock.apply_push(&push.inverse());
+        }
+        rock.y -= 1;
+        if rock.y == 0 || rock.overlaps_tower(&tower) {
+            rock.y += 1;
+            tower.add_rock(&rock);
+            break;
+        }
+    }
+
+    (rock, push_index)
+}
+
 fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
     let mut tower = Tower::new();
-    let mut push_it = pushes.iter().cycle();
-    let mut rock_kind_it = ROCK_KINDS.iter().cycle();
+    let mut push_index = 0;
     let mut record_key = HeightRecordKey::new();
     let mut height_records: HashMap<HeightRecordKey, RocksHeightRecord> = HashMap::new();
     for r in 0..rock_count {
-        let rock_kind = rock_kind_it.next().unwrap();
-        let mut rock = Rock::from_kind(2, tower.row_count() + 3, *rock_kind);
-
-        loop {
-            let push = push_it.next().unwrap();
-            rock.apply_push(push);
-            if rock.overlaps_tower(&tower) {
-                rock.apply_push(&push.inverse());
-            }
-            rock.y -= 1;
-            if rock.y == 0 || rock.overlaps_tower(&tower) {
-                rock.y += 1;
-                tower.add_rock(&rock);
-                break;
-            }
-        }
-
         let rock_index = r % ROCK_KINDS.len();
+        let rock_kind = &ROCK_KINDS[r % ROCK_KINDS.len()];
+        let (rock, new_push_index) = drop_rock(rock_kind, &mut tower, pushes, push_index);
+        push_index = new_push_index;
+
         record_key.add_x(rock.x, rock_index);
         if rock_index == ROCK_KINDS.len() - 1 {
             if let Some(prev_record) = height_records.get(&record_key) {
