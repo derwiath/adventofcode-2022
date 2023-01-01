@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -162,6 +163,10 @@ impl Tower {
         self.rows.len()
     }
 
+    fn height(&self) -> usize {
+        self.row_count() - 1
+    }
+
     fn row(&self, y: usize) -> u8 {
         self.rows[y]
     }
@@ -190,10 +195,93 @@ impl fmt::Debug for Tower {
     }
 }
 
+#[derive(Hash, PartialEq, Eq)]
+struct HeightRecordKey {
+    key: u16,
+}
+
+impl HeightRecordKey {
+    fn new() -> HeightRecordKey {
+        HeightRecordKey { key: 0 }
+    }
+
+    fn add_x(&mut self, x: u8, rock_index: usize) {
+        assert!(x < 7);
+        assert!(rock_index <= 5);
+        let shift = rock_index % 5;
+        self.key |= (x as u16 & 0b111) << shift * 3;
+    }
+}
+
+impl fmt::Debug for HeightRecordKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:1}{:1}{:1}{:1}{:1}",
+            (self.key >> 3 * 0) & 0b111,
+            (self.key >> 3 * 1) & 0b111,
+            (self.key >> 3 * 2) & 0b111,
+            (self.key >> 3 * 3) & 0b111,
+            (self.key >> 3 * 4) & 0b111
+        )
+    }
+}
+
+struct RocksHeightRecord {
+    r: usize,
+    height: usize,
+    height_diff: usize,
+    rocks_since_last: usize,
+    match_count: usize,
+}
+
+impl RocksHeightRecord {
+    fn new(r: usize, height: usize) -> RocksHeightRecord {
+        RocksHeightRecord {
+            r,
+            height,
+            height_diff: 0,
+            rocks_since_last: 0,
+            match_count: 1,
+        }
+    }
+
+    fn new_diff(r: usize, height: usize, prev_record: &RocksHeightRecord) -> RocksHeightRecord {
+        let rocks_since_last = r - prev_record.r;
+        let height_diff = height - prev_record.height;
+        let match_count = if height_diff == prev_record.height_diff
+            && rocks_since_last == prev_record.rocks_since_last
+        {
+            prev_record.match_count + 1
+        } else {
+            1
+        };
+        RocksHeightRecord {
+            r,
+            height,
+            height_diff,
+            rocks_since_last,
+            match_count,
+        }
+    }
+}
+
+impl fmt::Debug for RocksHeightRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:06} height {:06}, height_diff {:04}, rocks_since_last {:04}, match_count {}",
+            self.r, self.height, self.height_diff, self.rocks_since_last, self.match_count
+        )
+    }
+}
+
 fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
     let mut tower = Tower::new();
     let mut push_it = pushes.iter().cycle();
     let mut rock_kind_it = ROCK_KINDS.iter().cycle();
+    let mut record_key = HeightRecordKey::new();
+    let mut height_records: HashMap<HeightRecordKey, RocksHeightRecord> = HashMap::new();
     for r in 0..rock_count {
         let rock_kind = rock_kind_it.next().unwrap();
         let mut rock = Rock::from_kind(2, tower.row_count() + 3, *rock_kind);
@@ -212,13 +300,17 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
             }
         }
 
-        if r % 1000000 == 0 {
-            println!(
-                "{} ({:.2}%): height {}",
-                r,
-                (r as f64 / rock_count as f64) * 100.0,
-                tower.row_count()
-            );
+        let rock_index = r % ROCK_KINDS.len();
+        record_key.add_x(rock.x, rock_index);
+        if rock_index == ROCK_KINDS.len() - 1 {
+            if let Some(prev_record) = height_records.get(&record_key) {
+                let record = RocksHeightRecord::new_diff(r, tower.height(), &prev_record);
+                height_records.insert(record_key, record);
+            } else {
+                let record = RocksHeightRecord::new(r, tower.height());
+                height_records.insert(record_key, record);
+            }
+            record_key = HeightRecordKey::new();
         }
     }
 
