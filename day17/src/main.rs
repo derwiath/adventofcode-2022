@@ -152,30 +152,30 @@ impl Rock {
 
 struct Tower {
     rows: Vec<u8>,
-    row_count_offset: usize,
+    y_offset: usize,
 }
 
 impl Tower {
     fn new() -> Tower {
         Tower {
             rows: vec![0xff],
-            row_count_offset: 0,
+            y_offset: 0,
         }
     }
 
-    fn clone_top(&self, rock_count: usize) -> Tower {
+    fn clone_top(&self, rock_count: usize, y_offset: usize) -> Tower {
         assert!(rock_count <= self.rows.len());
-        let row_count_offset = self.rows.len() - rock_count;
+        let top_start_index = self.rows.len() - rock_count;
         let mut top_rows = Vec::new();
-        top_rows.extend_from_slice(&self.rows[row_count_offset..]);
+        top_rows.extend_from_slice(&self.rows[top_start_index..]);
         Tower {
             rows: top_rows,
-            row_count_offset: row_count_offset + self.row_count_offset,
+            y_offset,
         }
     }
 
     fn row_count(&self) -> usize {
-        self.rows.len() + self.row_count_offset
+        self.rows.len() + self.y_offset
     }
 
     fn height(&self) -> usize {
@@ -183,18 +183,18 @@ impl Tower {
     }
 
     fn row(&self, y: usize) -> u8 {
-        assert!(y >= self.row_count_offset);
-        assert!(y <= self.rows.len() + self.row_count_offset);
-        self.rows[y - self.row_count_offset]
+        assert!(y >= self.y_offset);
+        assert!(y <= self.rows.len() + self.y_offset);
+        self.rows[y - self.y_offset]
     }
 
     fn add_rock(&mut self, rock: &Rock) {
         assert!(rock.y > 0);
-        assert!(rock.y >= self.row_count_offset);
-        assert!((rock.y - self.row_count_offset) <= self.rows.len() + 1);
+        assert!(rock.y >= self.y_offset);
+        assert!((rock.y - self.y_offset) <= self.rows.len() + 1);
         for r in 0..rock.row_count() {
             let rock_row = rock.shifted_row(r).unwrap();
-            let y = (r + rock.y) - self.row_count_offset;
+            let y = (r + rock.y) - self.y_offset;
             if y < self.rows.len() {
                 self.rows[y] |= rock_row;
             } else {
@@ -206,8 +206,9 @@ impl Tower {
 
 impl fmt::Debug for Tower {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, r) in self.rows.iter().enumerate().rev() {
-            writeln!(f, "{:03}  {:08b}", i, r)?;
+        writeln!(f, "height {}, y_offset {}", self.height(), self.y_offset)?;
+        for (y, r) in self.rows.iter().enumerate().rev() {
+            writeln!(f, "{:03} {:08b}", y + self.y_offset, r)?;
         }
         Ok(())
     }
@@ -248,27 +249,35 @@ impl fmt::Debug for HeightRecordKey {
 struct RocksHeightRecord {
     r: usize,
     height: usize,
+    push_index: usize,
     height_diff: usize,
     rocks_since_last: usize,
     match_count: usize,
 }
 
 impl RocksHeightRecord {
-    fn new(r: usize, height: usize) -> RocksHeightRecord {
+    fn new(r: usize, height: usize, push_index: usize) -> RocksHeightRecord {
         RocksHeightRecord {
             r,
             height,
+            push_index,
             height_diff: 0,
             rocks_since_last: 0,
             match_count: 1,
         }
     }
 
-    fn new_diff(r: usize, height: usize, prev_record: &RocksHeightRecord) -> RocksHeightRecord {
+    fn new_diff(
+        r: usize,
+        height: usize,
+        push_index: usize,
+        prev_record: &RocksHeightRecord,
+    ) -> RocksHeightRecord {
         let rocks_since_last = r - prev_record.r;
         let height_diff = height - prev_record.height;
         let match_count = if height_diff == prev_record.height_diff
             && rocks_since_last == prev_record.rocks_since_last
+            && push_index == prev_record.push_index
         {
             prev_record.match_count + 1
         } else {
@@ -277,6 +286,7 @@ impl RocksHeightRecord {
         RocksHeightRecord {
             r,
             height,
+            push_index,
             height_diff,
             rocks_since_last,
             match_count,
@@ -288,8 +298,14 @@ impl fmt::Debug for RocksHeightRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:06} height {:06}, height_diff {:04}, rocks_since_last {:04}, match_count {}",
-            self.r, self.height, self.height_diff, self.rocks_since_last, self.match_count
+            "{:06} height {:06}, push_index {:06}, height_diff {:04} \
+            , rocks_since_last {:04}, match_count {}",
+            self.r,
+            self.height,
+            self.push_index,
+            self.height_diff,
+            self.rocks_since_last,
+            self.match_count
         )
     }
 }
@@ -321,6 +337,23 @@ fn drop_rock(
     (rock, push_index)
 }
 
+fn get_tower_height_from(
+    mut tower: Tower,
+    pushes: &[Push],
+    mut push_index: usize,
+    start_r: usize,
+    rock_count: usize,
+) -> usize {
+    for r in start_r..rock_count {
+        let rock_index = r % ROCK_KINDS.len();
+        let rock_kind = &ROCK_KINDS[rock_index];
+        let (_, new_push_index) = drop_rock(rock_kind, &mut tower, pushes, push_index);
+        push_index = new_push_index;
+    }
+
+    tower.height()
+}
+
 fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
     let mut tower = Tower::new();
     let mut push_index = 0;
@@ -335,12 +368,27 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
         record_key.add_x(rock.x, rock_index);
         if rock_index == ROCK_KINDS.len() - 1 {
             let record = if let Some(prev_record) = height_records.get(&record_key) {
-                RocksHeightRecord::new_diff(r, tower.height(), &prev_record)
+                RocksHeightRecord::new_diff(r, tower.height(), push_index, &prev_record)
             } else {
-                RocksHeightRecord::new(r, tower.height())
+                RocksHeightRecord::new(r, tower.height(), push_index)
             };
-            height_records.insert(record_key, record);
-            record_key = HeightRecordKey::new();
+            if record.match_count >= 10 {
+                let rocks_left = rock_count - r;
+                let jumps = rocks_left / record.rocks_since_last;
+                let new_r = r + 1 + jumps * record.rocks_since_last;
+                let y_offset =
+                    (tower.height() - record.height_diff) + jumps * record.height_diff + 1;
+                return get_tower_height_from(
+                    tower.clone_top(record.height_diff, y_offset),
+                    pushes,
+                    push_index,
+                    new_r,
+                    rock_count,
+                );
+            } else {
+                height_records.insert(record_key, record);
+                record_key = HeightRecordKey::new();
+            }
         }
     }
 
@@ -388,7 +436,7 @@ mod tests_day17 {
     }
 
     #[test]
-    fn test1_2() {
+    fn test1_get_tower_height_1() {
         let pushes = Push::from_str(EXAMPLE1);
 
         assert_eq!(get_tower_height(&pushes[..], 1), 1);
@@ -396,6 +444,23 @@ mod tests_day17 {
         assert_eq!(get_tower_height(&pushes[..], 3), 6);
         assert_eq!(get_tower_height(&pushes[..], 4), 7);
         assert_eq!(get_tower_height(&pushes[..], 5), 9);
+    }
+
+    #[test]
+    fn test1_get_tower_height_2() {
+        let pushes = Push::from_str(EXAMPLE1);
+
+        assert_eq!(get_tower_height(&pushes[..], 2022), 3068);
+    }
+
+    #[test]
+    fn test1_get_tower_height_from_1() {
+        let pushes = Push::from_str(EXAMPLE1);
+
+        assert_eq!(
+            get_tower_height_from(Tower::new(), &pushes[..], 0, 0, 2022),
+            3068
+        );
     }
 
     #[test]
@@ -453,5 +518,17 @@ mod tests_day17 {
     #[test]
     fn test2_1() {
         assert_eq!(solve_part2(EXAMPLE1), 1514285714288);
+    }
+
+    #[test]
+    fn test2_tower_clone_top_1() {
+        let mut tower = Tower::new();
+        tower.add_rock(&Rock::from_kind(0, 1, RockKind::RevL));
+        tower.add_rock(&Rock::from_kind(0, 4, RockKind::RevL));
+        assert_eq!(tower.height(), 6);
+
+        let top = tower.clone_top(2, tower.row_count() - 2);
+
+        assert_eq!(top.height(), 6);
     }
 }
