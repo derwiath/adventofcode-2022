@@ -316,13 +316,12 @@ fn get_tower_height(pushes: &[Push], rock_count: usize) -> usize {
 
         record_key.add_x(rock.x, rock_index);
         if rock_index == ROCK_KINDS.len() - 1 {
-            if let Some(prev_record) = height_records.get(&record_key) {
-                let record = RocksHeightRecord::new_diff(r, tower.height(), &prev_record);
-                height_records.insert(record_key, record);
+            let record = if let Some(prev_record) = height_records.get(&record_key) {
+                RocksHeightRecord::new_diff(r, tower.height(), &prev_record)
             } else {
-                let record = RocksHeightRecord::new(r, tower.height());
-                height_records.insert(record_key, record);
-            }
+                RocksHeightRecord::new(r, tower.height())
+            };
+            height_records.insert(record_key, record);
             record_key = HeightRecordKey::new();
         }
     }
